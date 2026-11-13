@@ -1,7 +1,7 @@
 # NO FCS Kit
 
 
-📄 Manual as a PDF (this README, formatted): [view it](NO-FCS-Kit-Manual.pdf) · [download it](https://github.com/duythinh2022-ui/Advanced-FCS-kit-for-Nuclear-Options-fixed-wings-Aircraft.-/raw/main/NO-FCS-Kit-Manual.pdf)
+📄 Full manual as a PDF: [view it](https://duythinh2022-ui.github.io/Advanced-FCS-kit-for-Nuclear-Options-fixed-wings-Aircraft.-/NO-FCS-Kit-Manual.pdf) · [download it](https://github.com/duythinh2022-ui/Advanced-FCS-kit-for-Nuclear-Options-fixed-wings-Aircraft.-/raw/main/NO-FCS-Kit-Manual.pdf)
 
  A kit for adding an advanced, modern flight control system to your own desired aircraft. 
  - Carefree and full authority handling across the entire airframe's flight envelope.
