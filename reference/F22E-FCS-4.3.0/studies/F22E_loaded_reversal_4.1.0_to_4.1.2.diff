@@ -1,0 +1,205 @@
+--- src410/Aryx_F22E_StrikeRaptor.FCS/FcsController.cs	2026-11-10 17:14:02.941160230 -0800
++++ src412/Aryx_F22E_StrikeRaptor.FCS/FcsController.cs	2026-11-10 20:43:37.336643700 -0800
+@@ -1695,6 +1695,12 @@
+ 
+ 		internal static bool RevCarry = true;
+ 
++		// F-22E 4.1.1: one acceleration through a reversal, the load's limit included (false = 4.1.0)
++		internal static bool RevOneAccel = true;
++
++		// F-22E 4.1.2: a reversal the load itself brakes builds its acceleration over the rudders' travel (false = 4.1.1)
++		internal static bool RevLoadRamp = true;
++
+ 		private float revA;
+ 
+ 		private float revTarget;
+@@ -8850,6 +8856,48 @@
+ 			pushPlanQNow = Mathf.MoveTowards(pushPlanQNow, qTgt, PushPlanJerk * dt);
+ 		}
+ 
++		// F-22E 4.1.2: 1 where the load takes no roll authority from the stick's side (the load pulls that way), fading to 0 as the
++		// trim it needs takes a tenth of the roll authority there (aRollGo: the stick-side authority after the load's trim)
++		private float LoadSideWeight(float aRollGo)
++		{
++			return Mathf.Clamp01(1f - (aRoll - aRollGo) / Mathf.Max(1f, 0.1f * aRoll));
++		}
++
++		// F-22E 4.1.2: how much of a reversal's build-up the rudders' travel paces (0..1): with an asymmetric load (the 2.1.6 gate), toward
++		// the side the load pulls, and where the yaw left after the load is what bounds the reversal (yawTop under the law's own reversal
++		// acceleration; at low AoA the roll asks little yaw, yawTop is above it and nothing is paced)
++		private float LoadRevPace(float aRollGo, float cosA, float yawTop)
++		{
++			if (!RevLoadRamp || !AsymSharedLat || !Plugin.AsymSharedLatOn || !asymValid || LoadRevYawK <= 0f)
++			{
++				return 0f;
++			}
++			float dyG = Mathf.Clamp01((Mathf.Abs(asymDy) - CoupHeldDy0) / Mathf.Max(0.005f, CoupHeldDySpan));
++			if (dyG <= 0f || RudderCrossTime() <= 0f)
++			{
++				return 0f;
++			}
++			float revLaw = RevFloorK * aRoll / Mathf.Max(Mathf.Abs(cosA), 0.05f);
++			return dyG * LoadSideWeight(aRollGo) * Mathf.Clamp01(2f * (1f - yawTop / Mathf.Max(1f, revLaw)));
++		}
++
++		// F-22E 4.1.2: the time the rudders need from where they are to the stop on the other side of center (0: no rudder left)
++		private float RudderCrossTime()
++		{
++			float sum = 0f;
++			int n = 0;
++			foreach (SurfaceEffector se in surfaces)
++			{
++				if (se.kind != SurfaceKind.Rudder || !se.active)
++				{
++					continue;
++				}
++				sum += (0.5f * (se.max - se.min) + Mathf.Abs(se.now - 0.5f * (se.max + se.min))) / Mathf.Max(1f, se.rate);
++				n++;
++			}
++			return (n > 0) ? (sum / n) : 0f;
++		}
++
+ 		private void LateralLaw(float dt)
+ 		{
+ 			float f = alpha * (MathF.PI / 180f);
+@@ -10144,6 +10192,11 @@
+ 			float num17 = (latAccDbg = a);
+ 			// 1.8.41: the roll entry's acceleration yields with the governor too (the entry is where the surfaces deflect most)
+ 			num17 *= Mathf.Lerp(RollGovAccelFloor, 1f, rollGov);
++			loadRevDbg = 0f;
++			// 4.1.2: the roll entry's acceleration as the law has it now (stick-side authority, the governor's share), and how much of a
++			// loaded reversal's build-up is paced by the rudders' travel (0 = none: clean jet, 4.1.1)
++			float entryA = num17;
++			float revRampW = 0f;
+ 			if (pTraj.x * (num11 - pTraj.x) < 0f)
+ 			{
+ 				float num18 = aRoll / Mathf.Max(30f, pFull);
+@@ -10151,10 +10204,56 @@
+ 				// 2.7.0 (PaceRevIntent): a reversal the stick asked for is a reversal, even while the measured window holds the target on
+ 				// the near side - it brakes at the reversal's tuned acceleration, not the stop's
+ 				bool revIntent = PaceRevIntent && paceTgtRaw * pTraj.x < 0f && Mathf.Abs(paceTgtRaw) > 10f;
+-				if (((num11 * pTraj.x < 0f && Mathf.Abs(num11) > 10f) || revIntent) && ReversalFloor)
++				bool revNow = ((num11 * pTraj.x < 0f && Mathf.Abs(num11) > 10f) || revIntent) && ReversalFloor;
++				float revFree = 0f;
++				if (revNow)
+ 				{
+ 					float num19 = RevFloorK * aRoll / Mathf.Max(Mathf.Abs(num), 0.05f);
+-					num17 = (revA = (RevConst ? num19 : Mathf.Max(num17, num19)));
++					num17 = (revFree = (RevConst ? num19 : Mathf.Max(num17, num19)));
++				}
++				// 2.1.6: with an asymmetric load, a roll brake / reversal may only accelerate as fast as the yaw left after the load
++				// can follow (the roll's yaw rate p sin AoA has to reverse with it; with the rudders already deflected for the load
++				// they slew across their whole travel). 12 Oct 19:30 log, 144 s: a 110 deg/s reversal at 30 deg AoA left the yaw
++				// 0.7 s behind, sideslip -11 deg, and the guard and governor cut the roll (target 116 -> 20 deg/s). Clean jets unchanged.
++				if (AsymSharedLat && Plugin.AsymSharedLatOn && asymValid && LoadRevYawK > 0f)
++				{
++					float dyG = Mathf.Clamp01((Mathf.Abs(asymDy) - CoupHeldDy0) / Mathf.Max(0.005f, CoupHeldDySpan));
++					if (dyG > 0f)
++					{
++						float revCap = LoadRevYawK * aYaw * Mathf.Max(0.2f, sharedLatDbg) / Mathf.Max(Mathf.Abs(num2), 0.05f);
++						// F-22E 4.1.2 (RevLoadRamp): a reversal toward the side the load pulls. There the load and the roll damping brake the
++						// old roll by themselves (the roll surfaces sit near neutral), and held to this limit the trajectory waited at it
++						// and built the new roll's acceleration after the zero crossing: 10 Nov 19:33 log (4.1.1), 34.0 / 45.6 / 49.7 s,
++						// 132-141 deg/s^2 braking with the ailerons at 4-6 deg, then 222-261 at 0.17-0.25 s after the crossing with the
++						// ailerons and flaps at their stops ("stop the roll, then spike"; 4.1.1 only made the rise continuous). What the
++						// 40 % stands for is the rudders' travel from where the load and the old roll hold them to the other side. On
++						// that side the reversal is therefore not held flat at 40 % and then released: its acceleration builds over that
++						// travel time (the jerk below) to one figure - the entry's, within the trajectory's own yaw figure of the yaw left
++						// (60 %) - and keeps it through the crossing up to the new rate (the carry below). Against the load the roll
++						// surfaces are at their stops through the whole reversal, there is no such pause, and the limit stays as it is
++						// (bench, lifted there: the yaw 16 deg/s behind, the governor holding the roll at the crossing). Stops are
++						// unchanged. RevLoadRamp = false: 4.1.1.
++						if (RevLoadRamp && revNow && RudderCrossTime() > 0f)
++						{
++							// up to the acceleration the new roll starts with, within the trajectory's own yaw figure (num16: 0.6 of the yaw
++							// authority) taken of the yaw left after the load
++							float yawTop = num16 * Mathf.Max(0.2f, sharedLatDbg);
++							revRampW = LoadRevPace(aRollGo, num, yawTop);
++							revCap = Mathf.Lerp(revCap, Mathf.Max(revCap, Mathf.Min(entryA, yawTop)), LoadSideWeight(aRollGo));
++						}
++						loadRevDbg = dyG;
++						num17 = Mathf.Lerp(num17, Mathf.Min(num17, revCap), dyG);
++					}
++				}
++				if (revNow)
++				{
++					// F-22E 4.1.1 (RevOneAccel): the reversal's acceleration is the one its brake flies, the load's limit included, and
++					// the new roll starts there (the 1.7.4 rule: one acceleration through the reversal, "capped by what the yaw axis
++					// can follow"). The load's limit of 2.1.6 sat after this branch and revA was stored before it, so a loaded
++					// reversal braked at the limit and started its new roll at the unlimited figure (10 Nov 18:10 log, six
++					// reversals with full aft stick at 14-24 deg AoA: 138-168 deg/s^2 braking, 328-414 within 0.1 s of the zero
++					// crossing; the ailerons from 7-13 deg to their stops in four ticks). RevOneAccel = false: 4.1.0.
++					revA = RevOneAccel ? num17 : revFree;
+ 					revTarget = revIntent ? paceTgtRaw : num11;
+ 				}
+ 			}
+@@ -10166,29 +10265,27 @@
+ 				}
+ 				else
+ 				{
+-					float num20 = 1f - Mathf.Clamp01(Mathf.Abs(pTraj.x) / Mathf.Max(10f, 0.5f * Mathf.Abs(num11)));
+-					num17 = Mathf.Max(num17, Mathf.Lerp(num17, revA, num20));
++					// the new roll starts at the reversal's acceleration and blends to the entry's by half its target rate. 4.1.1: from
++					// either side (4.1.0 only raised the entry's figure; a limited reversal starts below it)
++					// 4.1.2: a reversal the load brakes (pace > 0) keeps its one acceleration up to the new rate: the blend runs over the
++					// whole target rate and the entry's figure stays within the top its brake had, so nothing rises a second time after
++					// the crossing; and the build-up keeps the rudders' pace (a reversal from a low rate crosses zero before they have)
++					float yawTopC = num16 * Mathf.Max(0.2f, sharedLatDbg);
++					float pace = RevOneAccel ? LoadRevPace(aRollGo, num, yawTopC) : 0f;
++					float num20 = 1f - Mathf.Clamp01(Mathf.Abs(pTraj.x) / Mathf.Max(10f, Mathf.Lerp(0.5f, 1f, pace) * Mathf.Abs(num11)));
++					float carried = Mathf.Lerp(num17, revA, num20);
++					num17 = RevOneAccel ? carried : Mathf.Max(num17, carried);
++					if (pace > 0f)
++					{
++						num17 = Mathf.Lerp(num17, Mathf.Min(num17, Mathf.Min(entryA, yawTopC)), pace);
++					}
++					revRampW = pace;
+ 					if (num20 <= 0f)
+ 					{
+ 						revA = 0f;
+ 					}
+ 				}
+ 			}
+-			// 2.1.6: with an asymmetric load, a roll brake / reversal may only accelerate as fast as the yaw left after the load
+-			// can follow (the roll's yaw rate p sin AoA has to reverse with it; with the rudders already deflected for the load
+-			// they slew across their whole travel). 12 Oct 19:30 log, 144 s: a 110 deg/s reversal at 30 deg AoA left the yaw
+-			// 0.7 s behind, sideslip -11 deg, and the guard and governor cut the roll (target 116 -> 20 deg/s). Clean jets unchanged.
+-			loadRevDbg = 0f;
+-			if (AsymSharedLat && Plugin.AsymSharedLatOn && asymValid && LoadRevYawK > 0f && pTraj.x * (num11 - pTraj.x) < 0f)
+-			{
+-				float dyG = Mathf.Clamp01((Mathf.Abs(asymDy) - CoupHeldDy0) / Mathf.Max(0.005f, CoupHeldDySpan));
+-				if (dyG > 0f)
+-				{
+-					float revCap = LoadRevYawK * aYaw * Mathf.Max(0.2f, sharedLatDbg) / Mathf.Max(Mathf.Abs(num2), 0.05f);
+-					loadRevDbg = dyG;
+-					num17 = Mathf.Lerp(num17, Mathf.Min(num17, revCap), dyG);
+-				}
+-			}
+ 			if (paceAccelCap > 0f)
+ 			{
+ 				num17 = Mathf.Min(num17, paceAccelCap);
+@@ -10214,6 +10311,15 @@
+ 				num17 = Mathf.Max(0.5f, Mathf.Min(num17, pushHeldB));
+ 			}
+ 			float a2 = Mathf.Min(num17 / RollJerkTau, RollJerkServo * aRoll * rollSlew / Mathf.Max(Mathf.Abs(num), 0.05f));
++			// 4.1.2: the jerk as the law has it; the run-out onto the target keeps it where a loaded reversal's build-up is paced below
++			float a2Free = a2;
++			if (revRampW > 0f)
++			{
++				// 4.1.2: the acceleration of a reversal the load brakes builds over the time the rudders need from where they are to the
++				// other side's stop (measured positions, their servo rate), not over RollJerkTau
++				float tRud = RudderCrossTime();
++				if (tRud > RollJerkTau) a2 = Mathf.Min(a2, num17 / Mathf.Lerp(RollJerkTau, tRud, revRampW));
++			}
+ 			if (isAI && Plugin.AIDirectRoll)
+ 			{
+ 				float aDir = Mathf.Min(AIRollDirectAccel, 1.3f * num16);
+@@ -10243,7 +10349,7 @@
+ 			// Only with the stick released and above CoordStopA0..A1 deg AoA, so the roll feel with the stick in is unchanged.
+ 			// 2.5.3: kept at every level (the yaw-reach governor paces entries, brakes and reversals below the rudder fade; this
+ 			// paces the released-stick stop at high AoA from the measured lag, 01:40 log 214 s: 15.5 deg for 5 s without it)
+-			pTraj.Step(num11, Mathf.Max(num17, 0.5f), Mathf.Max(a2, jFloor), Mathf.Max(a2 * Mathf.Min(endJ, 1f), jFloor), dt);
++			pTraj.Step(num11, Mathf.Max(num17, 0.5f), Mathf.Max(a2, jFloor), Mathf.Max(Mathf.Max(a2, a2Free) * Mathf.Min(endJ, 1f), jFloor), dt);
+ 			pS = pTraj.x;
+ 			float num21 = 0f;
+ 			if (tas > 40f)

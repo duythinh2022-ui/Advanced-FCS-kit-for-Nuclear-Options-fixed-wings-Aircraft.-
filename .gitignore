@@ -1,0 +1,9 @@
+# build output (the reference trees' own .gitignore files cover their plugin folders)
+bin/
+obj/
+out/
+target/
+__pycache__/
+*.pyc
+# the kit's prebuilt native cores ARE part of the source: keep them
+!reference/*/native/prebuilt/*.dll

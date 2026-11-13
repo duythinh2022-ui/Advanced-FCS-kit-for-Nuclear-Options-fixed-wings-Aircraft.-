@@ -1,0 +1,26 @@
+# F-22E FCS 2.6.1
+
+Base: **2.6.0**. One change in the pace governor: the yaw-reach window's *release* is paced by the yaw. Bench-only, not flown. Your blend 0.41 / margin 4 throughout.
+
+## What you felt
+"The reference governor is not as smooth" in positive-AoA corkscrews. Bench series: 20 corkscrews (pitch stick 0.6 / 0.8 / 1.0 + full roll held 6 s, 250-550 km/h, roll at 0.3 s, at 0 s, roll-first-then-pull; full and 60 % throttle), the 2.2.7 rolling-pull governor stack (level 0, 2.5.x devices off, margin 6 / trade 0.7) against 2.6.0.
+
+- Steady corkscrew (after the first second), 2.2.7 vs 2.6.0: AoA wobble 27 vs 17 deg p-p, sideslip peak 4.5 vs 3.0, roll-acceleration roughness 1.23 vs 0.80, roll-target chatter 2.4 vs 1.1 deg/s - the reference governor is the smoother law there, at 64 vs 43 deg/s of roll.
+- **Entry, 20-50 deg AoA: a 1.9 Hz hold / release cycle**, +-5 deg/s on the roll target and +-5 deg on the rudders, target and rudder in anti-phase at 0.07 s lag. In your logs too: `pSTarget` chatter in rolling segments at 15-55 deg AoA was 0.6-0.7 deg/s in 2.5.8 / 2.5.11 and 3.0-3.7 in 2.5.15 / 2.5.16, rudders 1.8-2.0 -> 3.5-4.8 deg rms at ~2 Hz. Bisected on the benches: it arrives with **2.5.14** - not the trade share itself (a slower load filter on it changed nothing), but the room it gave the target: the trade cap rose from ~58 to ~85 deg/s at these conditions, so the target ran up into the window. The window (closed loop, gated by the rudders' load 50-75 %, 0.08 s filter, gate off over 0.3 s) then held the target while the rudders were loaded, let it go in one tick when they unloaded, and the target climbed straight back to the trade cap at the blended acceleration (~300 deg/s^2 at blend 0.41): yaw demand jumps, rudders reload, hold again. The blend lets the window hold while taking away the open-loop acceleration cap the window was designed with (2.5.3); the hold / release became bang-bang.
+
+## Change (`PaceReleasePace` 1; 0 = 2.6.0)
+The hold still comes on in one tick (that is the protection). The climb back out of a hold may not ask the yaw for more than `PaceYawUse` (0.85) of what the rudders can add toward the move's side (their tables, from where they are): roll-target rise x sin AoA = yaw acceleration; the part the measured yaw already supports ((r - correction) / sin AoA) is free. Only a hold with the roll already going the target's way is paced out - a stick reversal's hold (target kept at zero while the roll brakes through) releases as before, so reversals run at the tuned acceleration (pacing those too took 450 km/h / 12-19 deg reversals from 0.3 to 0.7-1.0 s on the bench; dropped). The trajectory's own acceleration and braking are untouched - this is the commanded rate climbing out of a hold at the yaw's pace instead of in a step. Telemetry `paceRel` (deg/s taken off the climb this tick), after `slipStiff`.
+
+## Bench, 2.6.0 -> 2.6.1
+- Corkscrew entries (first 2.5 s), 20 cases: roll-target chatter 2.14 -> 1.27 deg/s (2.5.13 level: 1.34), rudders 3.66 -> 3.17 deg rms (2.5.13: 2.76 - the rest is the guard's own work), mean roll 43 -> 43, sideslip peak 3.79 -> 3.66, AoA wobble 19.1 -> 19.0. Worst single cases: pull-0.6 350 km/h target chatter 3.4 -> 1.4, pull-0.8 450 4.0 -> 1.8, pull-1.0 350 2.3 -> 0.4.
+- Stop / reversal sweep (27 cases, 450-850 km/h, 5-23 deg): stops worst 6.9 -> 4.0, mean 3.04 -> 2.60; reversals worst 7.8 -> 7.7, mean 4.04 -> 3.66; mean roll 106 -> 105; reversal crossing 0.38 -> 0.39 s mean (per case within 0.02 s except 700 km/h / 15 deg 0.50 -> 0.63 and 450 / 19 deg, which now completes at 0.85 s with 6.9 -> 2.6 deg; it did not complete in 2.6.0).
+- Regression scenarios (18): identical except full-aft + roll + reversal at 3 s, 500 km/h: 5.2 -> 9.1. That corner is chaotic on the bench (rudders at the stop at 40-45 deg AoA; a 4.9 deg/s target difference for 0.1 s at 1.6 s sent it down another branch). Sampled instead at 450-560 km/h x reversal at 2.6-3.4 s, 60 cases each: reversal sideslip mean 4.68 -> 4.13, median 4.06 -> 2.90, max 10.65 -> 9.37, cases over 6 deg 20 -> 16; corkscrew sideslip before the reversal 3.00 -> 2.47 mean; crossing 0.81 -> 0.70 s. No regression in the aggregate.
+- Not changed by construction: level, keys, the rate cap, pitch caps, trade, probe, anything with the window not holding.
+
+## What is not fixed, by design
+- A roll established at low AoA then a full pull: the reference governor keeps the pitch at full rate and cuts the roll 150 -> 40 deg/s in a second (the 2.2.7 stack kept ~95 deg/s of roll and slowed the pull over 2.5 s). Roll traded first is the rule; it is a 4x deeper cut than before and reads as the roll dying under the pull.
+- A 0.6 s dip-and-rebuild of the roll at the 60 deg capture (pS 47 -> 35 -> 56) with the rudders near the stop and the body yaw having to jump 25 -> 50 deg/s.
+- Steady corkscrew at 65 deg AoA rolls at ~56 vs ~80 deg/s (the rate cap at sin 65).
+
+## Install
+- `BepInEx\plugins\Aryx_F22E_StrikeRaptor.FCS\Aryx_F22E_StrikeRaptor_FCS.dll` + `meta.json` 2.6.1; `BepInEx\plugins\Aryx_F22E_StrikeRaptor_FCS_Dev.dll` 2.6.1. Backup `.dll.2.6.0.bak`. Release `C:\Games\NO mods\F22E-FCS-2.6.1-release` (source zip carries the bench + `an/cork.py`, the corkscrew series, and `an/corkhf.py`). LogOutput: `F-22E FCS 2.6.1`. No key changes.

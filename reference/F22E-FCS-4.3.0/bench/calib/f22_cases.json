@@ -1,0 +1,11 @@
+[
+ {"name":"1435_stop267","log":"F22E_FCS_20261030_143501.csv","t0":265.5,"t1":270.5,"desc":"14:35 267.7 s stop"},
+ {"name":"1028_stop126","log":"F22E_FCS_20261030_102806.csv","t0":124.5,"t1":129.5,"desc":"10:28 126.4 s benign stop"},
+ {"name":"1028_stop231","log":"F22E_FCS_20261030_102806.csv","t0":229.5,"t1":234.5,"desc":"10:28 231.4 s benign stop"},
+ {"name":"2236_unload272","log":"F22E_FCS_20261030_223639.csv","t0":270.5,"t1":283.0,"desc":"22:36 272-282 s slow unloading rolls"},
+ {"name":"2236_rev50","log":"F22E_FCS_20261030_223639.csv","t0":48.5,"t1":54.0,"desc":"22:36 50-53 s rapid 8 g reversal"},
+ {"name":"2323_rev116","log":"F22E_FCS_20261030_232344.csv","t0":114.0,"t1":119.0,"desc":"23:23 116 s 9 g reversal"},
+ {"name":"2327_roll96","log":"F22E_FCS_20261030_232741.csv","t0":94.5,"t1":99.0,"desc":"23:27 96-98 s held 9 g roll"},
+ {"name":"2327_rev316","log":"F22E_FCS_20261030_232741.csv","t0":314.0,"t1":319.0,"desc":"23:27 316 s reversal"},
+ {"name":"2327_rev382","log":"F22E_FCS_20261030_232741.csv","t0":380.0,"t1":385.0,"desc":"23:27 382 s reversal"}
+]

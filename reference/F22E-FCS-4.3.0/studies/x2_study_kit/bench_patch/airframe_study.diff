@@ -1,0 +1,194 @@
+--- bench/fcs/StallStagger.cs	2026-11-07 10:15:34.000000000 -0800
++++ bench/fcs/StallStagger.cs	2026-11-09 13:22:27.212441307 -0800
+@@ -28,7 +28,9 @@
+ 			BodyAft = 4,
+ 			// 2.4.6: main wing panels (positive-AoA lift shaping) and the fuselage sections outside the fore / aft balance
+ 			Wing = 5,
+-			BodyMid = 6
++			BodyMid = 6,
++			// bench study 9 Nov: the LERX sections with simulated vortex lift (body-lift fore family otherwise)
++			Lerx = 7
+ 		}
+ 
+ 		public const int ChartN = 128;
+@@ -84,7 +86,7 @@
+ 
+ 		public static bool IsBody(Fam f)
+ 		{
+-			return f == Fam.BodyFore || f == Fam.BodyAft || f == Fam.BodyMid;
++			return f == Fam.BodyFore || f == Fam.BodyAft || f == Fam.BodyMid || f == Fam.Lerx;
+ 		}
+ 
+ 		public static float PeakFor(Fam f)
+@@ -166,10 +168,15 @@
+ 		}
+ 
+ 		// fills 128-point lift and drag charts (the game's sampling: index i <-> (i - 64) * ChartStep rad)
+-		public static void BuildCharts(Func<float, float> clOfRad, Func<float, float> cdOfRad, float P, float slope, float[] cl, float[] cd, float clScale = 1f)
++		public static void BuildCharts(Func<float, float> clOfRad, Func<float, float> cdOfRad, float P, float slope, float[] cl, float[] cd, float clScale = 1f, bool stab = false)
+ 		{
+ 			float p0Pos = FindPeakDeg(clOfRad, 1);
+ 			float p0Neg = FindPeakDeg(clOfRad, -1);
++			// bench study (9 Nov): post-peak shape of the stab curve. cl(x) = cp + (cd - cp) u^n, u = (x - P) / W, for P < |x| <= P + W;
++			// cd = the base curve at P + W (StabPostDrop < 0) or cp x (1 - StabPostDrop); then blended back to the base curve over StabPostBack deg
++			bool post = stab && Plugin.StabPostN > 0f;
++			float PP = Mathf.Clamp(P, 5f, 80f);
++			Func<float, int, float> baseCl = (xd0, s0) => { Map(xd0, P, (s0 > 0) ? p0Pos : p0Neg, slope, out float m0, out float amp0); return clScale * amp0 * clOfRad(s0 * m0 * Mathf.Deg2Rad); };
+ 			for (int i = 0; i < ChartN; i++)
+ 			{
+ 				float a = (i - 64) * ChartStep;
+@@ -183,6 +190,22 @@
+ 				}
+ 				cl[i] = clScale * amp * clOfRad(src);
+ 				cd[i] = cdOfRad(src);
++				if (post && xd > PP && xd <= 90f)
++				{
++					float W = Mathf.Max(1f, Plugin.StabPostW);
++					float cp = baseCl(PP, s);
++					float cdv = Plugin.StabPostDrop < 0f ? baseCl(Mathf.Min(90f, PP + W), s) : cp * (1f - Plugin.StabPostDrop);
++					float u = (xd - PP) / W;
++					float bk = Plugin.StabPostBack > 0f ? Mathf.Clamp01((xd - PP - W) / Plugin.StabPostBack) : 1f;
++					cd[i] *= 1f + Plugin.StabPostCd * Mathf.Min(1f, u) * (1f - bk * bk * (3f - 2f * bk));
++					if (u <= 1f) cl[i] = cp + (cdv - cp) * Mathf.Pow(u, Plugin.StabPostN);
++					else
++					{
++						float v = Plugin.StabPostBack > 0f ? Mathf.Clamp01((xd - PP - W) / Plugin.StabPostBack) : 1f;
++						v = v * v * (3f - 2f * v);
++						cl[i] = cdv + (cl[i] - cdv) * v;
++					}
++				}
+ 			}
+ 		}
+ 
+@@ -199,7 +222,7 @@
+ 				LiftShape.BuildWing(clOfRad, cdOfRad, cl, cd);
+ 				return;
+ 			}
+-			BuildCharts(clOfRad, cdOfRad, PeakFor(f), SlopeFor(f), cl, cd, (f == Fam.Stab) ? Plugin.StabCLScale : 1f);
++			BuildCharts(clOfRad, cdOfRad, PeakFor(f), SlopeFor(f), cl, cd, (f == Fam.Stab) ? Plugin.StabCLScale : 1f, f == Fam.Stab);
+ 		}
+ 
+ 		private static readonly Dictionary<string, AirfoilTable> tables = new Dictionary<string, AirfoilTable>();
+--- bench/fcs/BodyLift.cs	2026-11-07 10:15:34.000000000 -0800
++++ bench/fcs/BodyLift.cs	2026-11-09 13:47:02.272997931 -0800
+@@ -34,9 +34,10 @@
+ 			case "_Intake_R":
+ 			case "_Fore":
+ 			case "_Cockpit":
++				return StallStagger.Fam.BodyFore;
+ 			case "_LERX_L":
+ 			case "_LERX_R":
+-				return StallStagger.Fam.BodyFore;
++				return Plugin.LerxVortexKv > 0f ? StallStagger.Fam.Lerx : StallStagger.Fam.BodyFore;
+ 			case "_Engine_L":
+ 			case "_Engine_R":
+ 			case "_Tailboom_L":
+@@ -52,8 +53,21 @@
+ 			}
+ 		}
+ 
++		public static StallStagger.Fam Norm(StallStagger.Fam f) => f == StallStagger.Fam.Lerx ? StallStagger.Fam.BodyFore : f;
++
++		// bench study 9 Nov: simulated LERX vortex lift (Polhamus-style), on top of the section's own curve, positive AoA only:
++		// dCL = Kv sin^2(a) cos(a) x burst, burst 1 up to LerxBurst0 deg, smooth to 0 by LerxBurst1
++		public static float VortexCl(float alphaDeg)
++		{
++			if (alphaDeg <= 0f) return 0f;
++			float r = alphaDeg * Mathf.Deg2Rad, sn = Mathf.Sin(r);
++			float t = Mathf.Clamp01((alphaDeg - Plugin.LerxBurst0) / Mathf.Max(1f, Plugin.LerxBurst1 - Plugin.LerxBurst0));
++			return Plugin.LerxVortexKv * sn * sn * Mathf.Cos(r) * (1f - t * t * (3f - 2f * t));
++		}
++
+ 		public static float Core(StallStagger.Fam f)
+ 		{
++			f = Norm(f);
+ 			// 2.4.6: the families can now be active for the positive-AoA lift boost alone; the balance applies only when on
+ 			if (!Plugin.BodyLiftShaping)
+ 			{
+@@ -62,9 +76,19 @@
+ 			return f == StallStagger.Fam.BodyFore ? Plugin.BodyLiftFore : (f == StallStagger.Fam.BodyAft ? Plugin.BodyLiftAft : 1f);
+ 		}
+ 
++		// bench study 9 Nov: AoA-windowed extra lift on the aft body (engine bays, booms, tail): x (1 + BodyAftBump) from BumpA1 to BumpA2, smooth ramps from BumpA0 / to BumpA3
++		public static float AftBump(StallStagger.Fam f, float x)
++		{
++			if (Norm(f) != StallStagger.Fam.BodyAft || Plugin.BodyAftBump == 0f) return 1f;
++			float u = Mathf.Clamp01((x - Plugin.BumpA0) / Mathf.Max(0.5f, Plugin.BumpA1 - Plugin.BumpA0));
++			float d = Mathf.Clamp01((x - Plugin.BumpA2) / Mathf.Max(0.5f, Plugin.BumpA3 - Plugin.BumpA2));
++			float w = u * u * (3f - 2f * u) * (1f - d * d * (3f - 2f * d));
++			return 1f + Plugin.BodyAftBump * w;
++		}
++
+ 		public static float Mult(StallStagger.Fam f, float alphaDeg)
+ 		{
+-			float m = Core(f);
++			float m = Core(f) * AftBump(f, Mathf.Abs(alphaDeg));
+ 			float x = Mathf.Abs(alphaDeg);
+ 			if (x <= FadeStart)
+ 			{
+@@ -78,9 +102,36 @@
+ 			return Mathf.Lerp(m, 1f, t * t * (3f - 2f * t));
+ 		}
+ 
++		// bench study 9 Nov: AoA-scheduled fore / aft lift multipliers, positive body AoA only, knots "a:m,a:m,..." (Plugin.ForeSched /
++		// AftSched, null = off), linear between knots, held past the last; faded back to 1 from FadeStart to FadeEnd like the balance
++		static float Interp(string tab, float x)
++		{
++			if (string.IsNullOrEmpty(tab)) return 1f;
++			var pts = tab.Split(',');
++			float pa = 0f, pm = 1f; bool first = true;
++			foreach (var p in pts)
++			{
++				var kv = p.Split(':'); float a = float.Parse(kv[0], System.Globalization.CultureInfo.InvariantCulture), m = float.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture);
++				if (first) { if (x <= a) return m; first = false; }
++				else if (x <= a) return pm + (m - pm) * (x - pa) / Mathf.Max(1e-3f, a - pa);
++				pa = a; pm = m;
++			}
++			return pm;
++		}
++		public static float Sched(StallStagger.Fam fn, float x)
++		{
++			string tab = fn == StallStagger.Fam.BodyFore ? Plugin.ForeSched : (fn == StallStagger.Fam.BodyAft ? Plugin.AftSched : null);
++			if (string.IsNullOrEmpty(tab)) return 1f;
++			float m = Interp(tab, x);
++			if (x <= FadeStart) return m;
++			if (x >= FadeEnd) return 1f;
++			float t = (x - FadeStart) / (FadeEnd - FadeStart);
++			return Mathf.Lerp(m, 1f, t * t * (3f - 2f * t));
++		}
++
+ 		public static string KeyPart(StallStagger.Fam f)
+ 		{
+-			return Core(f).ToString("F3") + "|" + LiftShape.BodyKey();
++			return (Plugin.ForeSched ?? "") + "|" + (Plugin.AftSched ?? "") + "|" + Core(f).ToString("F3") + "|" + LiftShape.BodyKey() + (Norm(f) == StallStagger.Fam.BodyAft ? "|b" + Plugin.BodyAftBump.ToString("F3") + "|" + Plugin.BumpA0 + "|" + Plugin.BumpA1 + "|" + Plugin.BumpA2 + "|" + Plugin.BumpA3 : "") + (f == StallStagger.Fam.Lerx ? "|v" + Plugin.LerxVortexKv.ToString("F3") + "|" + Plugin.LerxBurst0.ToString("F1") + "|" + Plugin.LerxBurst1.ToString("F1") : "");
+ 		}
+ 
+ 		// 128-point charts in the game's sampling (index i <-> (i - 64) * ChartStep rad); drag is Aryx's. 2.4.6: x the
+@@ -95,7 +146,13 @@
+ 				{
+ 					deg -= 360f;
+ 				}
+-				cl[i] = clOfRad(a) * Mult(f, deg) * ((a < 0f) ? LiftShape.BodyGainFor(f, 0f - deg) : 1f);
++				StallStagger.Fam fn = Norm(f);
++				cl[i] = clOfRad(a) * Mult(fn, deg) * ((a < 0f) ? LiftShape.BodyGainFor(fn, 0f - deg) : 1f);
++				if (a < 0f) cl[i] *= Sched(fn, 0f - deg);
++				if (f == StallStagger.Fam.Lerx && a < 0f)
++				{
++					cl[i] -= VortexCl(0f - deg);
++				}
+ 				cd[i] = cdOfRad(a);
+ 			}
+ 		}
+--- bench/stubs/Plugin.cs	2026-11-07 10:15:34.000000000 -0800
++++ bench/stubs/Plugin.cs	2026-11-09 13:47:02.273403748 -0800
+@@ -141,6 +141,10 @@
+ internal static float RateCaptureLag = false ? 1f : Mathf.Clamp((1f), 0f, 3f);
+ internal static float TvcNeutralHold = false ? 1000f : Mathf.Max(0f, (1000f));
+ internal static float StabCLScale = false ? 1f : Mathf.Clamp((1f), 0.5f, 2f);
++internal static float StabPostN = 0f, StabPostW = 20f, StabPostDrop = -1f, StabPostBack = 25f, StabPostCd = 0f;
++internal static string ForeSched = null, AftSched = null;   // bench study 9 Nov
++internal static float LerxVortexKv = 0f, LerxBurst0 = 40f, LerxBurst1 = 55f;
++internal static float BodyAftBump = 0f, BumpA0 = 10f, BumpA1 = 18f, BumpA2 = 28f, BumpA3 = 36f;   // bench study 9 Nov   // bench study 9 Nov: simulated LERX vortex lift (0 = off)   // bench study 9 Nov: stab post-peak shape (0 = off)
+ internal static float StabLiftSlope = false ? -1f : Mathf.Clamp((-1f), -1f, 1f);
+ internal static float CgShiftAft = (0.05f);
+ internal static float CouplingFF = (0f);
