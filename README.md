@@ -14,4 +14,4 @@ More in the manual PDF.
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE): free to use, modify and share for noncommercial purposes. For commercial use, contact [duythinh2022-ui](https://github.com/duythinh2022-ui) on GitHub.
+[PolyForm Noncommercial 1.0.0](LICENSE): free to use, modify and share for noncommercial purposes.
