@@ -2,6 +2,8 @@
 
 **A measured-state fly-by-wire for Nuclear Option aircraft, packaged so you can put it on your own.**
 
+📄 Manual as a PDF (this README, formatted): [view it](NO-FCS-Kit-Manual.pdf) · [download it](https://github.com/duythinh2022-ui/Advanced-FCS-kit-for-Nuclear-Options-fixed-wings-Aircraft.-/raw/main/NO-FCS-Kit-Manual.pdf)
+
 This folder holds the complete flight control system (FCS) behind six Nuclear Option mods: the source of all six plugins,
 the offline 6-DOF **bench** each one is tested on (a bench is a desktop flight simulator that runs the real FCS code against a
 model of the aircraft, so a change can be tested without the game), a tool that clones any of them onto a new aircraft, and
