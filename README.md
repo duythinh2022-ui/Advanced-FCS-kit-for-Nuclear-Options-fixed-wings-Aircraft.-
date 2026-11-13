@@ -8,5 +8,6 @@
  - Departure resistant against damaged airframe.
  - Asymmetric load compensation.
  - Less reliant on fixed gain tables.
+ 
  More in the manual PDF.
 (Disclaimer: this is entirely vibecoded entirely by claude Opus and Fable)
