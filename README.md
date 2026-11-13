@@ -11,3 +11,7 @@
  
 More in the manual PDF.
 (Disclaimer: this is entirely vibecoded entirely by claude Opus and Fable)
+
+## License
+
+[PolyForm Noncommercial 1.0.0](LICENSE): free to use, modify and share for noncommercial purposes. For commercial use, contact [duythinh2022-ui](https://github.com/duythinh2022-ui) on GitHub.
