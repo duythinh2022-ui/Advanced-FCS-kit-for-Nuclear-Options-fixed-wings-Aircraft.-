@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build NO-FCS-Kit-Manual.pdf from README.md.
+"""Build NO-FCS-Kit-Manual.pdf from MANUAL.md (the full manual; README.md is the short front page).
 
-usage: python3 tools/build_manual_pdf.py [README.md] [out.pdf]
+usage: python3 tools/build_manual_pdf.py [MANUAL.md] [out.pdf]
 needs: pandoc (GitHub-flavoured markdown -> HTML), Python playwright with Chromium (HTML -> PDF).
 The PDF has a cover, the contents as its own page, a divider page per part, every numbered section on a new page,
 running page numbers and clickable internal links (the README's own anchors).
@@ -9,7 +9,7 @@ running page numbers and clickable internal links (the README's own anchors).
 import os, re, subprocess, sys, datetime, html
 
 KIT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(KIT, "README.md")
+SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(KIT, "MANUAL.md")
 OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(KIT, "NO-FCS-Kit-Manual.pdf")
 
 md = open(SRC, encoding="utf-8").read()

@@ -1,7 +1,8 @@
 # AGENTS.md: operating manual for AI models working on this FCS
 
 You are working on a flight control system for the game Nuclear Option (Unity, BepInEx 5 + Harmony plugins, C# 9 on Mono).
-This file is the compact, rule-first version of `README.md`. When this file and a source comment disagree, the source is the
+This file is the compact, rule-first version of the full manual, `MANUAL.md` (`README.md` is only the short front page;
+every "README §N" below means `MANUAL.md` §N). When this file and a source comment disagree, the source is the
 truth for *what the code does*; this file is the truth for *how to work on it*. Section numbers like "README §9.1" point into
 `README.md`.
 
@@ -38,8 +39,8 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
   capture); §22 the workflow every change went through and the tools; §23 the caveats of porting by hand; §24 airframe aerodynamics recommendations (margin, surfaces,
   strakes, thrust line, ground). If a user is new to
   flight control, point them to §21 before explaining code.
-- `NO-FCS-Kit-Manual.pdf` is built from `README.md` by `tools/build_manual_pdf.py` (pandoc + Playwright Chromium). Rebuild it
-  whenever README.md changes, or the two will disagree.
+- `NO-FCS-Kit-Manual.pdf` is built from `MANUAL.md` by `tools/build_manual_pdf.py` (pandoc + Playwright Chromium). Rebuild it
+  whenever MANUAL.md changes, or the two will disagree. Never build it from the short `README.md`.
 
 - Why it exists: the game's stock `ControlsFilter.FlyByWire` is a pitch-rate PID with an open-loop g target, a soft AoA
   limiter that never pushes the nose down, a fixed-rate body-axis roll loop and a yaw-rate damper, driving fixed surface
@@ -81,6 +82,8 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
     change for existing users, implement a one-time migration ("dev migration") and say so.
 11. **Versioning:** law change → minor bump; fix / telemetry / cleanup → patch bump. Update `FcsStandalonePlugin.Version`.
 12. **Never overstate verification.** Report "compiled", "bench-only" or "flown", with numbers. Bench numbers are relative.
+    The bench approximates the game and may not be accurate; the releases in this kit were flown and passed in game by the
+    author (12 Nov 2026), so where the bench and the game disagree, the game is the reference (README §17).
 13. **Judge the response curve on every manoeuvre** (Tom, 6 Nov): instant response, smooth rate, no spike, hitch, sudden
     slow-down, chatter or hesitation. Run the curve-quality checks (F-22E `bench/an/curveq.py`, README §10.3) and look at the
     time histories, not only peaks.
