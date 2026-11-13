@@ -11,8 +11,6 @@
  
 More in the manual PDF (source: [MANUAL.md](MANUAL.md)).
 
-**Testing:** the offline bench is an approximation of the game and may not be accurate, but the in-game behaviour of every jet in the current kit (F-22E 4.3.0, Ifrit 1.3.0, Revoker 1.4.1, Compass 0.5.0, Ternion 0.4.0, Su-30 0.6.0) has been flown and passed by me.
-
 (Disclaimer: this is entirely vibecoded entirely by claude Opus and Fable)
 
 ## License
