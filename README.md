@@ -1,5 +1,12 @@
 # NO FCS Kit
 
-**A measured-state fly-by-wire for Nuclear Option aircraft, packaged so you can put it on your own.**
 
 📄 Manual as a PDF (this README, formatted): [view it](NO-FCS-Kit-Manual.pdf) · [download it](https://github.com/duythinh2022-ui/Advanced-FCS-kit-for-Nuclear-Options-fixed-wings-Aircraft.-/raw/main/NO-FCS-Kit-Manual.pdf)
+
+ A kit for adding an advanced, modern flight control system to your own desired aircraft. 
+ - Carefree and full authority handling across the entire airframe's flight envelope.
+ - Departure resistant against damaged airframe.
+ - Asymmetric load compensation.
+ - Less reliant on fixed gain tables.
+ More in the manual PDF.
+(Disclaimer: this is entirely vibecoded entirely by claude Opus and Fable)
