@@ -37,6 +37,13 @@ body = body.replace('<h2 id="start-here">', '<h2 id="start-here" class="newpage"
 sub = re.search(r'<p><strong>(.+?)</strong></p>', intro_html)
 tables = re.findall(r'<table>.*?</table>', intro_html, flags=re.S)
 status = re.findall(r'<blockquote>(.*?)</blockquote>', intro_html, flags=re.S)
+# kit 4.0: the cover is one fixed-height page, so it carries only the status note and the newest edition's paragraph; the full
+# "what's new" note (every kit edition) goes at the top of the Start here page instead of spilling off the cover
+news = status[1:]
+cover_notes = status[:1] + [re.search(r'<p>.*?</p>', n, flags=re.S).group(0) for n in news[:1] if re.search(r'<p>.*?</p>', n, flags=re.S)]
+if news:
+    body = body.replace('<h2 id="start-here" class="newpage">Start here</h2>',
+                        '<h2 id="start-here" class="newpage">Start here</h2>' + "".join(f"<blockquote>{n}</blockquote>" for n in news), 1)
 today = datetime.date.today().strftime("%d %B %Y")
 cover = f'''
 <section class="cover">
@@ -44,10 +51,10 @@ cover = f'''
   <h1 class="title">NO FCS Kit</h1>
   <div class="subtitle">{sub.group(1) if sub else ""}</div>
   <div class="covertable">{tables[0] if tables else ""}</div>
-  {"".join(f'<div class="coverstatus">{b}</div>' for b in status)}
+  {"".join(f'<div class="coverstatus">{b}</div>' for b in cover_notes)}
   <div class="coverfoot">
     <div>FCS by <b>Tom</b> (GitHub <code>duythinh2022-ui</code>) · developed with Claude, Sept–Nov 2026</div>
-    <div>Manual built {today} from <code>README.md</code></div>
+    <div>Manual built {today} from <code>{os.path.basename(SRC)}</code></div>
   </div>
 </section>'''
 
