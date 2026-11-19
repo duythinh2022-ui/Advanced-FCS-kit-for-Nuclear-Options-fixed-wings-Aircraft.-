@@ -15,4 +15,4 @@ More in the manual PDF (source: [MANUAL.md](MANUAL.md)).
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE): free to use, modify and share for noncommercial purposes.
+[PolyForm Noncommercial 1.0.0](LICENSE)
