@@ -8,6 +8,8 @@
  - Departure resistant against damaged airframe.
  - Asymmetric load compensation.
  - Less reliant on fixed gain tables.
+
+ AI pilots compatibility is WIP.
  
 More in the manual PDF (source: [MANUAL.md](MANUAL.md)).
 
