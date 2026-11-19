@@ -16,7 +16,7 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
   - `Ifrit-FCS-1.5.0/Ifrit_KR67.FCS/`: stock KR-67, canted tails = pitch + yaw (no rudders), split decelerons, pitch + roll TVC, `Turbojet`.
   - `Revoker-FCS-1.5.0/Revoker_FS12.FCS/`: stock FS-12, canards (classified `Stabilator`), one rudder, delta elevons (outer
     `ControlSurface`, inner `HingeFlapEffector`), pitch + yaw TVC, `Turbojet`.
-  - `Compass-FCS-0.5.1/Compass_TA30.FCS/`: stock T/A-30 trainer, tail slabs, strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin.
+  - `Compass-FCS-0.6.0/Compass_TA30.FCS/`: stock T/A-30 trainer, tail slabs, strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin.
   - `Ternion-FCS-0.4.2/Ternion_FS3.FCS/`: Blueprinter FS-3, canards **and** aft elevators (two `Stabilator` pairs, `isCanard`),
     twin rudders, no TVC; `StructureFix`, engine-out zero-thrust match, spin recovery.
   - `Su30-FCS-0.6.5/Su30_VXN.FCS/`: kyleisred's Blueprinter Su-30VXN, canards (pitch-only) + stabs + rudders, canted single-axis
@@ -30,8 +30,8 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
   engine-out zero-thrust match and recovery thrust, the Vortex). Read the relevant part before touching any of those.
 - **The asymmetric-load system is one shared file** (`AsymShared.cs` + `AsymCap.cs` + `CoupledCap.cs`, README §2.19): the same
   text on every jet but the namespace line; per-jet behaviour only through `Plugin` settings. Check with
-  `tools/asym_shared/checkshared.py`. Revoker 1.5.0 and Compass 0.5.1 carry the first shared text (inert difference there);
-  copy `AsymShared.cs` from one of the other five.
+  `tools/asym_shared/checkshared.py`. Revoker 1.5.0 carries the first shared text (inert on a single-engine jet);
+  copy `AsymShared.cs` from one of the other six.
 - **Every jet carries a native (Rust) core** `<Jet>_FcsCore` (`native/fcs_core/`, exports `f22e_fcs_` / `ifr_fcs_` / `rev_fcs_` /
   `cmp_fcs_` / `tern_fcs_` / `su30_fcs_`; the Vortex's `Vortex_FcsCore` keeps the Revoker's `rev_fcs_` exports): the allocator's solve, the surface-table grid kernels and the coupled check's LP.
   It is embedded in the plugin DLL (`native/prebuilt/<Lib>.dll`), extracted to `BepInEx/cache/<Lib>/<sha16>/` and loaded by full
@@ -203,7 +203,7 @@ through §4.4 as law changes.
 | per-tick order | `FcsController.Tick` |
 | pitch law / lateral law / push plan | `PitchLaw`, `LateralLaw`, `PushPlanStep` |
 | envelope sweeps | `ComputeEnvelope`, `AuthCapStep`, `AsymStep`, `YawHealthStep` |
-| engine out | `VmcApply`, `ThrustMatchApply`, `EngineOutAoACap` (Compass), zero-thrust match `EngineOutZeroThrust` / `EngineOutMatchAoA`, `ZeroThrustPlanned()`, `EngSplitOut()`, recovery `EngineOutRecoverThrust` / `EngineOutRecoverUse` (F-22E, Su-30) |
+| engine out | `VmcApply`, `ThrustMatchApply`, `EngineOutAoACap` (with `EngineOutZeroThrust` off), zero-thrust match `EngineOutZeroThrust` / `EngineOutMatchAoA`, `ZeroThrustPlanned()`, `EngSplitOut()`, recovery `EngineOutRecoverThrust` / `EngineOutRecoverUse` (F-22E, Su-30) |
 | shared asymmetric-load code | `AsymShared.cs` (`AsymSweepPoint`, `CplSolve`, `AsymStep`, `AuthCapStep`, `FuelTrimStep`, `DamageGateStep`, `AsymGate`), `tools/asym_shared/checkshared.py` |
 | STOVL (Vortex) | `Stovl.cs` (`StovlSystem`, `CtolW`, TRC, thrust fit, vanes), `SwivelLink` (game's `SwivelDuctSystem` by reflection), `StovlHooks`, `ReleaseGuard`, `ThrottleDetent`, `HudThrottle`, `HudShipMatch`; config section `9. STOVL`; bench `stovl` mode (`bench/sim/StovlTest.cs`, `BenchStovl.cs`) |
 | allocator | `Allocator.Solve`, `axisWeight`, `fightK`, `pitchFightK`, `ReachPass`, `TwoHorizon`, `regScale` |
@@ -257,8 +257,8 @@ through §4.4 as law changes.
 - Vortex only (Tom's choices): `SlipCreditFade` (loaded-roll sideslip in the allocator, 0.3.4; not ported to the other six on
   purpose), the two-way pair link `sidx` in `Allocator` (0.4.5: the other six still use the one-way `pidx` in
   `StabSplitMode` / `GroupRoll`, README F40), the F-22E's lateral governor margins (0.3.14), AoA limit 24° while STOVL is active.
-- Engine out: zero-thrust match on the Ternion, Ifrit, Su-30, F-22E; recovery thrust on the Su-30 and F-22E only (not the Ifrit);
-  the Compass keeps an engine-out AoA cap; single-engine Revoker / Vortex have `EngineOutZeroThrust` as a constant `false`.
+- Engine out: zero-thrust match on the Ternion, Compass (0.6.0), Ifrit, Su-30, F-22E; recovery thrust on the Su-30 and F-22E only
+  (not the Ifrit; the Compass has no nozzles); single-engine Revoker / Vortex have `EngineOutZeroThrust` as a constant `false`.
 - Airframe files not in the kit: Ifrit, Revoker, Compass, Vortex (stock-game data; the Vortex also `vortex_systems.json`), F-22E (Aryx), Ternion (someone else's blueprint), Su-30 (kyleisred). Every bench builds but needs `BENCH_DATA` (and `BENCH_DMG`) to fly.
 - Known stock-bench bugs (README §10.7): `IfritTest.Defaults()` overrides drag relief / stagger / LERX; Buffed `ThrustScale` / `DragScale` not applied on the Ifrit / Revoker (and `DragScale` on the Ternion) bench paths; no turbofan altitude lapse on the F-22E / Ternion benches. Fix before quoting performance numbers.
 

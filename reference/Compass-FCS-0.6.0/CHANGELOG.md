@@ -1,5 +1,8 @@
 # Changelog
 
+## T/A-30 Compass FCS 0.6.0 (18 Nov 2026)
+One engine out: no AoA cap for it any more; from `EngineOutMatchAoA` (35 deg) up, and at any AoA once the yaw saturates, the live engine is matched to the dead one at zero thrust (Tom's 9 Nov rule, as on the Ternion, Ifrit, Su-30 and F-22E). New dev keys `EngineOutZeroThrust` (on) and `EngineOutMatchAoA`. The shared asymmetric-load file is now the same text as on the F-22E, Ifrit, Ternion, Su-30 and Vortex (AsymShared 07b1e78b2722f37a). Bench: MPO full aft with an engine out, sideslip 34.4 (departs) -> 0.8; full-aft pulls hold the 35 deg limit instead of the 22 deg cap, at an energy cost; everything without an engine out identical. Benched, not flown. See Compass_FCS_0.6.0_notes.md.
+
 ## T/A-30 Compass FCS 0.5.1 (17 Nov 2026)
 Tom: "make all of them use the same thing" (option 3). The asymmetric-load code is now one shared file (`AsymShared.cs`, with `AsymCap.cs` and `CoupledCap.cs`), the same text in all seven FCS mods; per-jet settings stay in each jet's own files. Flies as 0.5.0 (bench identical apart from 4 of 50 damage cases, largest 20.5 -> 20.6 deg). Benched, not flown. See Compass_FCS_0.5.1_notes.md.
 

@@ -193,7 +193,10 @@ namespace Compass_TA30.FCS
 		public static float FlapCamberK => (cFlapCamber != null) ? Mathf.Clamp(cFlapCamber.Value, 0f, 1f) : 0.46f;
 
 		// shared asymmetric-load code (AsymShared.cs): per-jet settings this jet has no config entry for
-		public static bool EngineOutZeroThrust => false;
+		// Compass 0.6.0: EngineOutZeroThrust / EngineOutMatchAoA are config entries now ("Asymmetric load")
+		public static bool EngineOutZeroThrust => cEngOutZero == null || cEngOutZero.Value;
+
+		public static float EngineOutMatchAoA => (cEngOutMatchAoA != null) ? Mathf.Clamp(cEngOutMatchAoA.Value, 5f, 70f) : 35f;
 
 		public static bool AsymCoupledCheck => true;
 
@@ -1266,6 +1269,10 @@ namespace Compass_TA30.FCS
 
 		private static ConfigEntry<bool> cEngAbGate;
 
+		private static ConfigEntry<bool> cEngOutZero;
+
+		private static ConfigEntry<float> cEngOutMatchAoA;
+
 		private static ConfigEntry<int> cStickRev;
 
 		private static ConfigEntry<float> cStick24;
@@ -1637,6 +1644,8 @@ namespace Compass_TA30.FCS
 			cEngDmgCap = dev.Bind("Asymmetric load", "EngineDamagedAoACap", 40f, "Ifrit 0.4.2: 40 (first 0.4.1 / 2.4.1 cut: 30, the engine-out cap; a running engine's split is a third to a half of a dead one's, and below the speed where the fins could not hold it the thrust match now takes over on prediction, so the cap only says where the full split is traded for matched thrust). Ifrit 0.4.1: with one engine running weak (damaged, not destroyed: under 85 % of the other's thrust, released above 92 %, 1 s filter) the AoA limit is this fixed value, both signs, instead of the dynamic thrust cap (which fell to 12 deg within 5 s in the 22 Oct 22:08 log and then followed IAS). The dead-engine case keeps EngineOutAoACap. The game caps a damaged engine at 50-100 % of its RPM range by its condition (no afterburner below condition ~0.6), so the weak engine makes 35-75 % of the good one's thrust at AB. Bench, full pulls from 300-400 km/h with the left engine at condition 0 / 0.5: 26-30 hold with 5-8 deg peak sideslip, 36 saturates the yaw once the speed is gone (throttle cut a third of the time, one departure), 45 departs.");
 			cThrResp = dev.Bind("5. Airframe", "ThrottleResponseScale", 1f, "Ifrit 0.4.1: throttle response (Ifrit 0.4.5: back to the game's own, 1) for every variant (Stock included): the engines' spool rate (RPM per second toward the throttle's target) and the afterburner's light-up / fade speed are multiplied by this at the airframe setup. 1 = the mod's own values.");
 			cEngAbGate = dev.Bind("Asymmetric load", "EngineAbAoAGate", true, "Ifrit 0.4.1: thrust-match limiter. With one engine down on thrust (predicted from the engines' damage state: an engine's reachable RPM is minRPM + (maxRPM - minRPM) x (0.5 x condition + 0.5), the dry thrust follows the RPM and the afterburner needs 85 % of maxRPM, i.e. condition above 0.55) and the AoA above EngineDamagedAoACap, the throttle input is held where the two engines still make the same thrust, so there is no thrust split and no AoA cap for it: you keep the full AoA, and the thrust comes back once you bring the AoA down to the cap yourself (on above cap + 2, off under cap + 0.5). Below the cap the throttle is free; the thrust split then brings the fixed EngineDamagedAoACap. With an engine OUT there is nothing to match: above EngineOutAoACap the throttle is held at military power (the afterburner's start). The VMC throttle protection (measured sideslip run-away) stays as the last resort. false = 0.4.0 (dynamic cap from the thrust split, nose pushed down).");
+			cEngOutMatchAoA = dev.Bind("Asymmetric load", "EngineOutMatchAoA", 35f, "Compass 0.6.0 (Ternion 0.1.11 rule): with an engine destroyed, the live engine is matched to it (zero thrust) from this AoA up (default 35; timed to be complete as the AoA gets here), and at any AoA once the yaw saturates; it stays matched until the AoA is 5 deg under this, the yaw has settled and the stick no longer pulls toward it. No AoA limit comes from the engine loss.");
+			cEngOutZero = dev.Bind("Asymmetric load", "EngineOutZeroThrust", true, "Compass 0.6.0 (Ternion 0.1.9 rule, Tom 9 Nov: every FCS mod): with an engine OUT (destroyed), the AoA is not capped for it (EngineOutAoACap is no longer a limit): from EngineOutMatchAoA up, in every mode including MPO, the live engine is matched to the dead one - zero thrust (its afterburner off) - timed to be complete as the AoA gets there, and at any AoA when the yaw saturates. false = 0.5.1 (AoA capped at EngineOutAoACap, the live engine held at military power above it).");
 			cFuelTrim = dev.Bind("6. Fuel", "FuelTrim", defaultValue: true, "2.0.12: when the yaw or roll authority runs short (an engine out, a fin or wing section shot off), the balancing moves the CG sideways with fuel instead of holding it on the centreline: toward the live engine to shorten its thrust lever arm, or against an aerodynamic asymmetry. Only once the yaw or roll usage passes 0.75, only as far as evens out the roll and yaw usage (a sideways CG costs roll: ~15 deg/s^2 per g per 10 cm), at most 30 cm; back to the centreline once both are under 0.5 for 2 s. false = centreline always (2.0.6-2.0.11).");
 			cFuelTrimRate = dev.Bind("6. Fuel", "FuelTrimRate", 240f, "2.0.12: fuel moved per second (kg/s, in total) while the fuel trim works (normal balancing: FuelTransferRate). Ifrit 0.4.1: 240 (was 120).");
 			cFuelRate = dev.Bind("6. Fuel", "FuelTransferRate", 80f, "2.0.6: total fuel the balancing moves per second (kg/s). Ifrit 0.4.1: 80 (was 40).");

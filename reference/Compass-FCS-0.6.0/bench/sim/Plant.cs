@@ -261,7 +261,7 @@ internal sealed class Plant
                 foreach (var n in tf.nozzles)
                 {
                     // game Afterburner.Run: amount = Lerp(amount, Clamp01((x - start) / (end - start)), smoothing x dt), x = throttle if RPM > 85 % (else 0)
-                    float abTgt = (tf.operable && tf.rpm / tf.maxRPM > 0.85f) ? Mathf.InverseLerp(n.abStart, 1f, thrE) : 0f;
+                    float abTgt = (tf.operable && tf.rpm / tf.maxRPM > 0.85f && tf.parasitic <= 0f)   /* game JetNozzle.Thrust: no afterburner while a parasitic loss is set (Compass 0.6.0 bench, as Ifrit 1.5.0) */ ? Mathf.InverseLerp(n.abStart, 1f, thrE) : 0f;
                     if (EvalOnly || AbSmoothing <= 0f) n.abAmt = abTgt; else n.abAmt = Mathf.Lerp(n.abAmt, abTgt, AbSmoothing * SpoolScale * dt);
                     float ab = n.abThrust * n.abAmt * Mathf.Clamp(A.ac.airDensity, 0.4f, 1f);
                     n.totalThrust = thr + ab;

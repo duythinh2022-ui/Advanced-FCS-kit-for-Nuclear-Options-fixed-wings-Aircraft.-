@@ -26,7 +26,8 @@ public enum AoALimitTest
 internal static class Plugin {
 internal static BepInEx.Logging.ManualLogSource Log = new BepInEx.Logging.ManualLogSource();
 internal static float FlapCamberK = true ? Mathf.Clamp((0.4f), 0f, 1f) : 0.46f;
-internal static bool EngineOutZeroThrust = false;
+internal static bool EngineOutZeroThrust = false || (true);
+internal static float EngineOutMatchAoA = true ? Mathf.Clamp((35f), 5f, 70f) : 35f;
 internal static bool AsymCoupledCheck = true;
 internal static float AileronCamberK = true ? Mathf.Clamp((0.55f), 0f, 1f) : 0.45f;
 internal static bool MpoSeparateAxes = true && (MpoRollMode.VelocityVectorRoll) == MpoRollMode.SeparateRollYaw;

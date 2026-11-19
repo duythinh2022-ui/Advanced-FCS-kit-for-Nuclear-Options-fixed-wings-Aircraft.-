@@ -12,7 +12,7 @@ this manual.
 | **F-22E Strike Raptor** (Aryx's mod) | 4.5.1 | twin canted fins + rudders, all-moving stabs, flaperons, **pitch-only TVC**; since 3.2.0 a **relaxed-to-neutral airframe** (airframe X2e) |
 | **KR-67 Ifrit** (stock) | 1.5.0 | canted all-moving tails that are also the **yaw axis** (no rudders), split decelerons, **pitch + roll TVC** |
 | **FS-12 Revoker** (stock) | 1.5.0 | **canards**, single fin, delta elevons, **pitch + yaw TVC** |
-| **T/A-30 Compass** (stock trainer) | 0.5.1 | conventional tail slabs, wing-root strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin |
+| **T/A-30 Compass** (stock trainer) | 0.6.0 | conventional tail slabs, wing-root strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin |
 | **FS-3 Ternion** (Blueprinter mod) | 0.4.2 | **two pitch pairs** (canards + aft elevators), twin rudders, flaperons + rollervons, **no TVC** |
 | **Su-30VXN Gandiva** (kyleisred's Blueprinter mod) | 0.6.5 | canards + stabs + rudders, flaperons, **canted single-axis nozzles** (each nozzle one axis, 32° outboard) |
 | **FS-20 Vortex** (stock) | 0.5.10 | delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**: lift fan, roll posts, three-bearing swivel nozzle (F-35B-style laws) |
@@ -570,7 +570,7 @@ The FCS assumes nothing about which parts survive. In layers:
    was 35–45°.
 5. **Engine out / damaged engine:** `EngineOutAoACap`, `EngineDamagedAoACap`; **thrust match** (`EngineAbAoAGate`): with one
    engine down on thrust, the healthy one is held to the damaged one's thrust until the AoA comes down, pre-emptively and
-   proportionally, aware of the engine-spacing moment arm. With one engine **destroyed** on the Ternion, Ifrit, Su-30 and F-22E
+   proportionally, aware of the engine-spacing moment arm. With one engine **destroyed** on the Ternion, Compass, Ifrit, Su-30 and F-22E
    the AoA is no longer capped for it: the live engine is matched to zero thrust from 35° AoA, with a recovery thrust when the
    engine is lost above the no-TVC limit (F-22E, Su-30; §8.28).
 6. **VMC limiter** (`VmcApply`, last resort): when yaw is saturated and sideslip runs away with an engine out, the throttle is
@@ -768,13 +768,13 @@ it stays a per-jet setting.**
   window; the Ifrit's differential nozzles as a column, free nozzles at low thrust and the sliding engine-out limit; the
   Ternion's slat schedule and engine-out zero-thrust match.
 - **Check it:** `python3 tools/asym_shared/checkshared.py` in any reference tree (sha256 of the namespace-normalised files).
-- **State in this kit.** `AsymCap.cs` and `CoupledCap.cs` are identical on all seven. `AsymShared.cs` is identical on five
-  (F-22E, Ifrit, Ternion, Su-30, Vortex: `07b1e78b2722f37a`); the **Revoker 1.5.0 and Compass 0.5.1 releases carry the first
-  shared text** (`62f3250027774425`, 17 Nov morning), which lacks the engine-out zero-thrust helpers added that afternoon
-  (`ZeroThrustPlanned`, `EngSplitOut`; §8.28). On those two jets `EngineOutZeroThrust` is a constant `false`, so both helpers
-  reduce to the old conditions and the two texts fly the same; the jets were not re-released for it, and the kit keeps the
-  released source so it still rebuilds the shipped DLLs byte for byte. **A new port should copy `AsymShared.cs` from one of the
-  other five.**
+- **State in this kit.** `AsymCap.cs` and `CoupledCap.cs` are identical on all seven. `AsymShared.cs` is identical on six
+  (F-22E, Ifrit, Compass 0.6.0, Ternion, Su-30, Vortex: `07b1e78b2722f37a`); the **Revoker 1.5.0 release carries the first shared
+  text** (`62f3250027774425`, 17 Nov morning), which lacks the engine-out zero-thrust helpers added that afternoon
+  (`ZeroThrustPlanned`, `EngSplitOut`; §8.28). The Revoker has one engine and `EngineOutZeroThrust` is a constant `false` there,
+  so both helpers reduce to the old conditions and the two texts fly the same; it was not re-released for it, and the kit keeps
+  the released source so it still rebuilds the shipped DLL byte for byte. **A new port should copy `AsymShared.cs` from one of
+  the other six.**
 
 [↑ Contents](#contents)
 
@@ -808,7 +808,7 @@ asymmetric-load system is one shared file on all of them (§2.19).
 
 **The three added in kit 2.0:**
 
-| | T/A-30 Compass (0.5.1) | FS-3 Ternion (0.4.2) | Su-30VXN Gandiva (0.6.5) |
+| | T/A-30 Compass (0.6.0) | FS-3 Ternion (0.4.2) | Su-30VXN Gandiva (0.6.5) |
 |---|---|---|---|
 | What it is | stock trainer / light attack; forked from Revoker 0.8.2 | Blueprinter mod (prefab `P_Trisurface1`); forked from Compass 0.1.11 | kyleisred's Blueprinter mod (`SolarSu30.dll`); forked from Ternion 0.1.8 |
 | Aircraft match | prefab exactly `trainer` (or a clone), or "T/A-30"/"Compass" | prefab `P_Trisurface1` (or a clone), or "Ternion" | aircraftName "Su-30VXN" / "Gandiva" only (other Su-30 mods are left alone) |
@@ -820,7 +820,7 @@ asymmetric-load system is one shared file on all of them (§2.19).
 | Max pitch rate | 48 → 60 at full stick | 48 → 60 at full stick | 60 (0.5.7) |
 | Max yaw rate | 90 | 90 | 90 (`FallingLeafYawBoost` 1.2) |
 | Airframe aero changes | strake (LERX) Polhamus vortex lift ×3.4 (`StrakeVortexLift`), CG 0.15 m aft, tail downwash 0.45, camber | canards ×1.1, elevators ×1.2 stalling at 30°, shoulder LERX ×1.13, Revoker-style staggered trailing-edge stall, no downwash | high-AoA drag reshaped to halfway between the Ifrit and Revoker (`HighAoADragShape`), thrust line moved to the CG, CG 0.10 m aft, canards ×1.6, LERX ×1.5, aft body lift ×0.5, the 1.0.0 mass layout restored on 1.0.1 (`Su30CgReference`) |
-| Damage / engine-out specifics | `VmcPredict`, `AsymPitchBias`, `StabRollGovernor`, `AsymDamageGate`; engine out: AoA cap (no zero-thrust match) | `StructureFix` (tail stays when an engine dies), engine-out zero-thrust match (its origin), spin recovery, `EngineOutSlipTrim` (`LiveAuthCap` off since 0.2.2) | inherits the Ternion's; `AsymStopTime`, `CplKnee`; zero-thrust match + recovery thrust (0.6.4 / 0.6.5, §8.28) |
+| Damage / engine-out specifics | `VmcPredict`, `AsymPitchBias`, `StabRollGovernor`, `AsymDamageGate`; engine out: zero-thrust match (0.6.0, §8.28) | `StructureFix` (tail stays when an engine dies), engine-out zero-thrust match (its origin), spin recovery, `EngineOutSlipTrim` (`LiveAuthCap` off since 0.2.2) | inherits the Ternion's; `AsymStopTime`, `CplKnee`; zero-thrust match + recovery thrust (0.6.4 / 0.6.5, §8.28) |
 | Asymmetric-load AoA limit | coupled check (0.4.0), share 0.75, thrust about the offset CG in the load | coupled check (0.2.2, its origin) | coupled check with each canted nozzle as an effector (0.5.0), share 0.8 |
 | Native core | `Compass_FcsCore` (`cmp_fcs_*`) | `Ternion_FcsCore` (`tern_fcs_*`) | `Su30_FcsCore` (`su30_fcs_*`) |
 | Governor specifics | blend 0.65, stop slip 6 | blend 0.45, stop slip 6 | blend 0.4, stop slip 10, `TradeCapTau` 0.45, low-speed TVC roll, `StopHardOnReversal` |
@@ -894,7 +894,7 @@ fly stock or Aryx's jets.
 
 ```bash
 sudo apt install -y dotnet-sdk-8.0 python3 python3-pandas python3-numpy python3-scipy   # Linux or WSL2
-cd reference/Revoker-FCS-1.5.0           # or Ifrit-FCS-1.5.0 / Compass-FCS-0.5.1 / Vortex-FCS-0.5.10 (extract the airframe files first: §5)
+cd reference/Revoker-FCS-1.5.0           # or Ifrit-FCS-1.5.0 / Compass-FCS-0.6.0 / Vortex-FCS-0.5.10 (extract the airframe files first: §5)
 bash bench.sh build                       # sync the FCS source into bench/fcs, generate the config stub, compile
 bash bench.sh fly ias=400 alt=1500 thr=1 T=6 pitch=0:0,0.2:1 roll=0:0,1.5:0,1.7:1 fcslog=bench/out/x.csv
 bash bench.sh suite base                  # the regression suite (~10 min on 2 cores)
@@ -926,7 +926,7 @@ NO-FCS-Kit/
 │   │                             the loaded-reversal port hand-off)
 │   ├── Ifrit-FCS-1.5.0/          plugin folder Ifrit_KR67.FCS/
 │   ├── Revoker-FCS-1.5.0/        plugin folder Revoker_FS12.FCS/
-│   ├── Compass-FCS-0.5.1/        plugin folder Compass_TA30.FCS/
+│   ├── Compass-FCS-0.6.0/        plugin folder Compass_TA30.FCS/
 │   ├── Ternion-FCS-0.4.2/        plugin folder Ternion_FS3.FCS/
 │   ├── Su30-FCS-0.6.5/           plugin folder Su30_VXN.FCS/
 │   └── Vortex-FCS-0.5.10/        plugin folder Vortex_FS20.FCS/; tools/vanebox/ (vane box mesh generator),
@@ -1240,8 +1240,8 @@ aircraft and other layouts have not been done yet ([§24.10](#2410-configuration
 
 ### 8.13 Engine out / damaged engine (twin-engine jets)
 - Thrust match before VMC; VMC aware of the engine-spacing arm; damaged-engine cap 50° (F-22E). The engine-out AoA cap (Ifrit:
-  dynamic 22 → 18°; F-22E 30°; Su-30 22°) was **replaced on the TVC twins in kit 4.0** by the zero-thrust match and recovery
-  thrust (§8.28); the Compass keeps a cap.
+  dynamic 22 → 18°; F-22E 30°; Su-30 22°) was **replaced on every twin in kit 4.0** by the zero-thrust match (§8.28), with a recovery
+  thrust on the F-22E and Su-30; the Compass (no TVC) got the match in 0.6.0.
 - **Fixed nozzles** (Compass, Ternion): a jet whose engines have no vectoring transform had its thrust moment skipped
   entirely, so with an engine out the live engine's yaw read 0. Take the thrust moment as it is (roll/yaw only, engine out
   only), and limit the throttle **predictively** once that yaw passes 70 % of the yaw authority at the predicted dynamic
@@ -1639,8 +1639,9 @@ engine's thrust to the dead one's, zero if it is destroyed, in every mode includ
 
 **Evidence (bench).** Ifrit, MPO full aft at 350 km/h: sideslip 73° and a spin → 1.9°, no spin. Su-30, engine killed at the 80°
 limit, stick held: 86–90° held → 80 → 50° by 6 s, sideslip ≤ 2.3°. F-22E: the nose comes down 65 → 45° in either build; with the
-recovery the thrust stays on through it (+15–18 km/h at 6 s). **Not done:** recovery thrust on the Ifrit; the Compass still
-uses an engine-out AoA cap.
+recovery the thrust stays on through it (+15–18 km/h at 6 s). Compass 0.6.0 (no TVC, match only): MPO full aft at 350 km/h,
+sideslip 34.4° and a departure → 0.8°; full-aft pulls hold its 35° limit instead of a 22° cap. **Not done:** recovery thrust on the
+Ifrit.
 
 [↑ Contents](#contents)
 
@@ -2341,7 +2342,7 @@ cd reference
 (cd F22E-FCS-4.5.1    && bash build.sh Aryx_F22E_StrikeRaptor.FCS Aryx_F22E_StrikeRaptor_FCS.dll)
 (cd Ifrit-FCS-1.5.0    && bash build.sh Ifrit_KR67.FCS Ifrit_KR67_FCS.dll)
 (cd Revoker-FCS-1.5.0  && bash build.sh Revoker_FS12.FCS Revoker_FS12_FCS.dll)
-(cd Compass-FCS-0.5.1  && bash build.sh Compass_TA30.FCS Compass_TA30_FCS.dll)
+(cd Compass-FCS-0.6.0  && bash build.sh Compass_TA30.FCS Compass_TA30_FCS.dll)
 (cd Ternion-FCS-0.4.2  && bash build.sh Ternion_FS3.FCS Ternion_FS3_FCS.dll)
 (cd Su30-FCS-0.6.5     && bash build.sh Su30_VXN.FCS Su30_VXN_FCS.dll)
 (cd Vortex-FCS-0.5.10  && bash build.sh Vortex_FS20.FCS Vortex_FS20_FCS.dll)   # also needs Rewired_Core, Unity.TextMeshPro,
@@ -2424,9 +2425,9 @@ roll unmade (look for a cost holding a trim).
 
 Checked when this kit was assembled (kit 4.0, 18 Nov 2026):
 
-| Check | F-22E 4.5.1 | Ifrit 1.5.0 | Revoker 1.5.0 | Compass 0.5.1 | Ternion 0.4.2 | Su-30 0.6.5 | Vortex 0.5.10 |
+| Check | F-22E 4.5.1 | Ifrit 1.5.0 | Revoker 1.5.0 | Compass 0.6.0 | Ternion 0.4.2 | Su-30 0.6.5 | Vortex 0.5.10 |
 |---|---|---|---|---|---|---|---|
-| Plugin rebuilt from this folder with `build.sh`, md5 equal to the shipped release DLL (native core embedded) | ✅ `5fddd5b4…` | ✅ `8246c4ea…` | ✅ `8ed972be…` | ✅ `75f3e1a6…` | ✅ `ca471980…` | ✅ `b8028905…` | ✅ `66fc0ce1…` |
+| Plugin rebuilt from this folder with `build.sh`, md5 equal to the shipped release DLL (native core embedded) | ✅ `5fddd5b4…` | ✅ `8246c4ea…` | ✅ `8ed972be…` | ✅ `18bb6ccd…` | ✅ `ca471980…` | ✅ `b8028905…` | ✅ `66fc0ce1…` |
 | Bench compiles from this folder, with the Linux native core (`lib<Lib>.so`), no airframe files present | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Bench flies a scripted pull-and-roll case (airframe files supplied, §5); native paths used (`FCS_NATIVE_STATS`: 0 fallbacks, 144 coupled LPs) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Same case with `NativeAllocatorCheck=2` (every solve both ways): mismatches | 0 / 2,927 | 0 / 5,302 | 0 / 5,279 | 0 / 5,303 | 0 / 5,310 | 0 / 5,281 | 0 / 5,279 |
@@ -2935,9 +2936,11 @@ pedal from 15 kt: peak sideslip 2.6 → 9.3°, speed 19.9 → 9.5 kt.
 - **Still open across the jets.**
   - The Ifrit has the zero-thrust match but not the recovery thrust: an engine lost while TVC holds it above 45° leaves a jet
     that can't get its nose down at zero thrust (bench: tail-slide to 166° AoA with the stick held; recovers if released).
-  - The Compass (a fixed-nozzle twin) still uses an engine-out AoA cap, not the zero-thrust match (`EngineOutZeroThrust` is a
-    constant `false` there).
-  - The Revoker 1.5.0 and Compass 0.5.1 releases carry the first shared `AsymShared.cs` text (§2.19).
+  - The Revoker 1.5.0 release carries the first shared `AsymShared.cs` text (§2.19; inert on a single-engine jet).
+  - The zero-thrust match's let-go reads the stick against the AoA's sign: after a fall over the top with the stick still aft,
+    the AoA turns negative and a held stick counts as released, so the live engine's thrust comes back at low speed until the
+    yaw-saturation latch re-takes it (Compass 0.6.0 bench, 500 km/h full-aft hold: sideslip up to 10.7° at 66–87 km/h). Shared
+    rule, the same on every twin; not changed.
   - The Vortex 0.4.5 allocator fix (the stabilator-pair link was one-way, so the right surface's whole roll, pitch included,
     was priced as a roll "fight"; 189 deg/s² of phantom roll with the airbrake out at 611 kt) is on the Vortex only. The other six
     still have the one-way link (`pidx` in `Allocator.StabSplitMode` / `GroupRoll`); on them it has not shown in flight, but a
@@ -2973,9 +2976,17 @@ pedal from 15 kt: peak sideslip 2.6 → 9.3°, speed 19.9 → 9.5 kt.
 - **1.5.0 · Shared asymmetric-load code.** 18 of 25 matrix cases within 1.5°; 1160 kg at 300 km/h, AoA past the limit
   3.5 → 6.8° (gap tighten); loaded reversals mean sideslip 1.90 → 2.00°. Clean sets and damage table identical.
 
-### 19.19 T/A-30 Compass (0.5.0 → 0.5.1)
+### 19.19 T/A-30 Compass (0.5.0 → 0.6.0)
 - **0.5.1 · Shared asymmetric-load code, no change in how it flies** (matrix 24/24, loaded reversals 264/264 identical; damage
   suite 4 of 50 differ, largest 20.5 → 20.6°).
+- **0.6.0 · One engine out: zero-thrust match** (Tom, 18 Nov, after the kit audit found the Compass was the one twin still on the
+  engine-out AoA cap). Ported from the Ternion (the `zeroLatch` match in `VmcApply`, `ThrustZeroApply` in the Ifrit's Turbojet
+  form, `EngSplitOut()` on the two engine-out yaw rules); `AsymShared.cs` brought up to the shared text. Bench, left engine
+  killed: MPO full aft 350 km/h, sideslip 34.4 (departs) → 0.8°; full-aft pulls hold the 35° limit instead of the 22° cap
+  (sideslip ≤ 0.8°); a roll reversal at 35° / 150 km/h gives 7.6° of sideslip, the same as both engines at idle (7.8°: the
+  airframe's limit there). Cost: energy (500 km/h full-aft hold, lowest IAS 184 → 65 km/h). Everything without an engine out
+  identical (regression, sweep, corkscrews line for line; asymmetric-load matrix 24/24). On this jet the match point and the
+  AoA limit are both 35°. Not flown.
 
 ### 19.20 FS-3 Ternion (0.4.0 → 0.4.2)
 - **0.4.1 · Shared asymmetric-load code.** Three matrix cases differ in one figure each (peak roll 40.9 → 43.8 deg/s; idle-pull AoA
@@ -3049,14 +3060,14 @@ hand-offs) → 3.1.9 (fuel hook) → 3.2.0–3.2.1 (relaxed-to-neutral airframe 
 loaded reversal, ground brakes) → 4.2.0 (coupled check, off) → 4.3.0 (flying backwards) → 4.4.0 (shared asymmetric-load code) →
 4.5.0–4.5.1 (engine out: zero-thrust match, recovery thrust). Ifrit 0.1 (port of 2.2.5) → 0.9 (3.0.0
 governor) → 0.16 → 0.17 (push-over hand-offs) → 1.0.0 (several cores) → 1.3.0 → 1.5.0. Revoker 0.1 (28 Oct) → 0.6 (3.0.0 governor) → 0.8.3 →
-1.0.0 → 1.4.1 → 1.5.0. Compass 0.1.0 (5 Nov, fork of Revoker 0.8.2) → 0.1.12 → 0.2.0 → 0.5.0 → 0.5.1. Ternion 0.1.0 (7 Nov, fork of Compass
+1.0.0 → 1.4.1 → 1.5.0. Compass 0.1.0 (5 Nov, fork of Revoker 0.8.2) → 0.1.12 → 0.2.0 → 0.5.0 → 0.6.0. Ternion 0.1.0 (7 Nov, fork of Compass
 0.1.11) → 0.1.12 → 0.2.0 → 0.4.0 → 0.4.2. Su-30 0.1.0 (7 Nov, fork of Ternion 0.1.8) → 0.2.3 (10 Nov) → 0.6.0 (12 Nov) →
 0.6.5 (17 Nov). Vortex 0.1.0 (16 Nov, clone of Revoker 1.4.2) → 0.3.0 (shared code) → 0.5.10 (18 Nov).
 
 **Kit editions:** 1.0 (5 Nov 2026: F-22E 3.0.1, Ifrit 0.16.0, Revoker 0.8.2); 2.0 (10 Nov 2026: six jets, §19.1–19.7); 3.0
 (12 Nov 2026: F-22E 4.3.0, Ifrit 1.3.0, Revoker 1.4.1, Compass 0.5.0, Ternion 0.4.0, Su-30 0.6.0; native core, coupled check,
 loaded reversals, flying backwards, ground brakes; §19.8–19.14); 3.1 (12 Nov 2026: Part IV, §21–24); 4.0 (18 Nov 2026:
-F-22E 4.5.1, Ifrit 1.5.0, Revoker 1.5.0, Compass 0.5.1, Ternion 0.4.2, Su-30 0.6.5 and the new Vortex 0.5.10; shared
+F-22E 4.5.1, Ifrit 1.5.0, Revoker 1.5.0, Compass 0.6.0, Ternion 0.4.2, Su-30 0.6.5 and the new Vortex 0.5.10; shared
 asymmetric-load code, engine-out zero-thrust match, STOVL; §19.15–19.22).
 
 [↑ Contents](#contents)

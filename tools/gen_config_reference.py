@@ -13,7 +13,7 @@ ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file
 JETS = [("F-22E", "reference/F22E-FCS-4.5.1/Aryx_F22E_StrikeRaptor.FCS/Plugin.cs"),
         ("Ifrit", "reference/Ifrit-FCS-1.5.0/Ifrit_KR67.FCS/Plugin.cs"),
         ("Revoker", "reference/Revoker-FCS-1.5.0/Revoker_FS12.FCS/Plugin.cs"),
-        ("Compass", "reference/Compass-FCS-0.5.1/Compass_TA30.FCS/Plugin.cs"),
+        ("Compass", "reference/Compass-FCS-0.6.0/Compass_TA30.FCS/Plugin.cs"),
         ("Ternion", "reference/Ternion-FCS-0.4.2/Ternion_FS3.FCS/Plugin.cs"),
         ("Su-30", "reference/Su30-FCS-0.6.5/Su30_VXN.FCS/Plugin.cs"),
         ("Vortex", "reference/Vortex-FCS-0.5.10/Vortex_FS20.FCS/Plugin.cs")]

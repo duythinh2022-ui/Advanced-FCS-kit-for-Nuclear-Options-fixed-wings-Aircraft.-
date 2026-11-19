@@ -40,7 +40,7 @@ SRC = {
                   harmony="tom.ifrit_kr67.fcs", csv="Ifrit_FCS_", sync="bench/isync.sh", lib="Ifrit_FcsCore"),
     "revoker": dict(dir="reference/Revoker-FCS-1.5.0", ns="Revoker_FS12.FCS", title="FS-12 Revoker FCS", short="Revoker FCS",
                     harmony="tom.revoker_fs12.fcs", csv="Revoker_FCS_", sync="bench/rsync.sh", lib="Revoker_FcsCore"),
-    "compass": dict(dir="reference/Compass-FCS-0.5.1", ns="Compass_TA30.FCS", title="T/A-30 Compass FCS", short="Compass FCS",
+    "compass": dict(dir="reference/Compass-FCS-0.6.0", ns="Compass_TA30.FCS", title="T/A-30 Compass FCS", short="Compass FCS",
                     harmony="tom.compass_ta30.fcs", csv="Compass_FCS_", sync="bench/rsync.sh", lib="Compass_FcsCore"),
     "ternion": dict(dir="reference/Ternion-FCS-0.4.2", ns="Ternion_FS3.FCS", title="FS-3 Ternion FCS", short="Ternion FCS",
                     harmony="tom.ternion_fs3.fcs", csv="Ternion_FCS_", sync="bench/rsync.sh", lib="Ternion_FcsCore"),

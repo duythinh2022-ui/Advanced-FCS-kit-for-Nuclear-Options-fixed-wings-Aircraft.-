@@ -14,11 +14,11 @@ Line count of each file on each jet (— = the file does not exist on that jet).
 |---|---|---|---|---|---|---|---|---|---|
 | LAW | `Allocator.cs` | 1418 | 1536 | 1445 | 1445 | 1449 | 1446 | 1633 | Nonlinear control allocator: box-constrained Gauss-Newton over every effector's moment table; regularisation, pair costs, fight costs, reach pass + two-horizon pick, paired stab/TVC search, slip-frame weighting. |
 | LAW | `AsymCap.cs` | 410 | 410 | 410 | 410 | 410 | 410 | 410 | Asymmetric-load AoA cap: remaps the stick onto a reduced AoA limit when stores/damage leave too little lateral authority. |
-| LAW | `AsymShared.cs` | 2390 | 2390 | 2369 | 2369 | 2390 | 2390 | 2390 | The asymmetric-load system shared by all seven jets since 17 Nov (FcsController is partial): sweep (AsymSweepPoint, coupled LP CplSolve, SwGather), cap (AsymStep, CplKnee, CplDemand, CapFilterStep), low-thrust authority cap, FuelTrimStep, DamageGateStep, AsymGate. Same text everywhere but the namespace (tools/asym_shared/checkshared.py); per-jet behaviour only through Plugin settings. |
+| LAW | `AsymShared.cs` | 2390 | 2390 | 2369 | 2390 | 2390 | 2390 | 2390 | The asymmetric-load system shared by all seven jets since 17 Nov (FcsController is partial): sweep (AsymSweepPoint, coupled LP CplSolve, SwGather), cap (AsymStep, CplKnee, CplDemand, CapFilterStep), low-thrust authority cap, FuelTrimStep, DamageGateStep, AsymGate. Same text everywhere but the namespace (tools/asym_shared/checkshared.py); per-jet behaviour only through Plugin settings. |
 | LAW | `CapacityEstimator.cs` | 290 | 392 | 371 | 371 | 371 | 361 | 371 | Per-axis, per-side angular-acceleration capacity (measured + committed + allocator probe). The governor's only input about what the jet can still do. |
 | LAW | `CoupledCap.cs` | 555 | 555 | 555 | 555 | 555 | 555 | 555 | Coupled asymmetric-load check (Ternion 0.2.2, all six since 12 Nov): per sweep AoA a small LP over every effector's moment points gives the flight-path roll left each way with the load, pitch held and no sideslip acceleration; the AoA cap sits where the weaker side falls to AsymCoupledReserveMax of the roll range (FindTop = the lower edge of the top over-threshold stretch). Off by default on the F-22E. |
 | LAW | `EstimatorJob.cs` | 139 | 139 | 139 | 139 | 139 | 139 | 139 | Threading (F-22E 3.0.4): runs the capacity estimator's allocator probes on a pool thread, on mirrored effectors and allocator; joined at the top of the next tick (the laws already read the previous tick's estimate). |
-| LAW | `FcsController.cs` | 10017 | 11384 | 11597 | 11870 | 12257 | 13724 | 12654 | The whole flight control computer: air data, modes, pitch law, lateral law, reference-capacity governor, push plan, limits (asym/low-thrust/fin-loss/engine-out), INDI, allocator calls, ground steering, VMC, telemetry. Per-jet. |
+| LAW | `FcsController.cs` | 10017 | 11384 | 11597 | 11939 | 12257 | 13724 | 12654 | The whole flight control computer: air data, modes, pitch law, lateral law, reference-capacity governor, push plan, limits (asym/low-thrust/fin-loss/engine-out), INDI, allocator calls, ground steering, VMC, telemetry. Per-jet. |
 | LAW | `FcsMode.cs` | 13 | 13 | 13 | 13 | 13 | 13 | 13 | Mode enum: Off, Ground, GearDownRate, AoAG, MPO, AIRate, Rate. |
 | LAW | `Lpf.cs` | 21 | 21 | 21 | 21 | 21 | 21 | 21 | First-order low-pass filter (scalar). |
 | LAW | `Lpf3.cs` | 23 | 23 | 23 | 23 | 23 | 23 | 23 | First-order low-pass filter (Vector3). |
@@ -57,7 +57,7 @@ Line count of each file on each jet (— = the file does not exist on that jet).
 | GLUE | `Hooks.cs` | 538 | 526 | 712 | 712 | 712 | 784 | 723 | Harmony patch bodies: ControlsFilter.Filter (the FCS tick), ControlSurface write-back, TVC transpilers, gear steering, flaps, airbrake, AI auto-aim. |
 | GLUE | `MpPolicy.cs` | 370 | 370 | 370 | 370 | 370 | 370 | 370 | Multiplayer host policy: FCS only if the host runs it and allows it (HostAllowFcs), host-locked variant (HostLockVariant). |
 | GLUE | `Names.cs` | — | — | — | — | — | 52 | — | Su-30: maps the blueprint's L/R-prefixed part names (LCanard_struct, Left_stab_struct...) onto the lineage's _L/_R suffix scheme. |
-| GLUE | `Plugin.cs` | 2437 | 2417 | 2784 | 2868 | 3032 | 3591 | 3611 | All config keys (player + Dev file), migrations, Harmony installation. |
+| GLUE | `Plugin.cs` | 2437 | 2417 | 2784 | 2877 | 3032 | 3591 | 3611 | All config keys (player + Dev file), migrations, Harmony installation. |
 | GLUE | `Registry.cs` | 589 | 512 | 540 | 617 | 647 | 901 | 556 | Which aircraft get the FCS (IsF22 = aircraft match), one-time airframe setup, controller lifetime, surface ownership. |
 | GLUE | `StovlHooks.cs` | — | — | — | — | — | — | 374 | Vortex: game-side hooks of the STOVL laws - takes the SwivelDuctSystem's swivel command and the lift system's pitch/roll/yaw inputs from the allocator, and the engine throttle from the STOVL laws, while the FCS owns the lift system. |
 | GLUE | `StructureFix.cs` | — | — | — | — | 139 | — | — | Ternion: re-homes a part whose transform parent is an engine but which is jointed to the airframe, so a destroyed engine no longer takes the tail with it. |
@@ -87,11 +87,11 @@ whose column is smallest for the files you care about.
 |---|---|---|---|---|---|---|---|
 | LAW | `Allocator.cs` | 160 | 141 | 2 | 10 | 17 | 192 |
 | LAW | `AsymCap.cs` | identical | identical | identical | identical | identical | identical |
-| LAW | `AsymShared.cs` | identical | 29 | identical | 29 | identical | 29 |
+| LAW | `AsymShared.cs` | identical | 29 | 29 | identical | identical | 29 |
 | LAW | `CapacityEstimator.cs` | 460 | 23 | identical | identical | 22 | identical |
 | LAW | `CoupledCap.cs` | identical | identical | identical | identical | identical | identical |
 | LAW | `EstimatorJob.cs` | identical | identical | identical | identical | identical | identical |
-| LAW | `FcsController.cs` | 2805 | 1903 | 479 | 565 | 2553 | 1201 |
+| LAW | `FcsController.cs` | 2805 | 1903 | 558 | 594 | 2553 | 1201 |
 | LAW | `FcsMode.cs` | identical | identical | identical | identical | identical | identical |
 | LAW | `Lpf.cs` | identical | identical | identical | identical | identical | identical |
 | LAW | `Lpf3.cs` | identical | identical | identical | identical | identical | identical |
@@ -130,7 +130,7 @@ whose column is smallest for the files you care about.
 | GLUE | `Hooks.cs` | 160 | 250 | 10 | 26 | 98 | 17 |
 | GLUE | `MpPolicy.cs` | 2 | identical | identical | identical | identical | identical |
 | GLUE | `Names.cs` | — | — | — | — | — | — |
-| GLUE | `Plugin.cs` | 1416 | 759 | 290 | 346 | 983 | 1047 |
+| GLUE | `Plugin.cs` | 1416 | 759 | 299 | 347 | 983 | 1047 |
 | GLUE | `Registry.cs` | 189 | 70 | 127 | 82 | 318 | 62 |
 | GLUE | `StovlHooks.cs` | — | — | — | — | — | — |
 | GLUE | `StructureFix.cs` | — | — | — | — | — | — |

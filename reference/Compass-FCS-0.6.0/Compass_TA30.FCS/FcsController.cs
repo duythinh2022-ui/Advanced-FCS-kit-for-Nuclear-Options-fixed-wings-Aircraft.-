@@ -5578,7 +5578,7 @@ namespace Compass_TA30.FCS
 			// window (0.4.3, StabParkEscape). Bench, the log's push and release at 55 m/s: with the exemption the wing stays
 			// crossed (ailerons -30/+26) for 10 s; without it the wing is symmetric within 3 s.
 			float relFin = (yawHealth > 0.99f && decelF <= 0.01f) ? 1f : 0f;
-			if (engOut || (engAsym && FightExemptAsym))
+			if (EngSplitOut() || (engAsym && FightExemptAsym))
 			{
 				relFin *= Mathf.Clamp01((yawSat - 0.05f) / 0.3f);
 			}
@@ -6273,7 +6273,7 @@ namespace Compass_TA30.FCS
 				decelDbg = 0f;
 				yawClampStabDbg = 0f;
 				alloc.fightW[1] = (alloc.fightW[2] = (alloc.fightW[3] = 1f));
-				if (YawTargetClamp && (yawHealth < 0.999f || engOut || engAsym))
+				if (YawTargetClamp && (yawHealth < 0.999f || EngSplitOut() || engAsym))
 				{
 					bool hasRudders = false;
 					foreach (SurfaceEffector sR in surfaces)
@@ -9477,6 +9477,10 @@ namespace Compass_TA30.FCS
 			}
 		}
 
+		// Compass 0.6.0: the engine-out zero-thrust match's latch and its let-go band (Ternion 0.1.11)
+		private bool zeroLatch;
+		internal static float EngineOutMatchHyst = 5f;
+
 		public void VmcApply(ControlInputs inp, float dt)
 		{
 			TvcCutoffStep();
@@ -9492,6 +9496,7 @@ namespace Compass_TA30.FCS
 				vmcMatch = false;
 				matchF = 0f;
 				matchFull = false;
+				zeroLatch = false;
 				ThrustMatchClear();
 				return;
 			}
@@ -9514,7 +9519,7 @@ namespace Compass_TA30.FCS
 			// with a weak (running) engine the run-away is answered by the thrust match, not by cutting both engines
 			// (23 Oct 00:06 F-22E log: both throttled to T/W 0.13 for 5 s at 40-60 m/s): the match holds until the
 			// sideslip has been calm for 2 s
-			bool weakEng = engAbRatio < EngineAsymEnter && !engOut;
+			bool weakEng = (engAbRatio < EngineAsymEnter && !engOut) || (engOut && EngineOutZeroMatch && Plugin.EngineOutZeroThrust);
 			if (runaway && weakEng && Plugin.EngineAbAoAGate && EngineOutFixedCap)
 			{
 				vmcMatch = true;
@@ -9606,7 +9611,35 @@ namespace Compass_TA30.FCS
 			bool weak = engAbRatio < EngineAsymEnter;
 			bool gateNeed = Plugin.EngineAbAoAGate && EngineOutFixedCap && (engOut || weak);
 			float tgtF = 0f;
-			if (gateNeed && engOut)
+			if (!(gateNeed && engOut))
+			{
+				zeroLatch = false;
+			}
+			if (gateNeed && engOut && EngineOutZeroMatch && Plugin.EngineOutZeroThrust)
+			{
+				// Compass 0.6.0 (Ternion 0.1.9 / 0.1.11 / 0.4.2, Tom's 9 Nov rule for every FCS mod): an engine out is matched too - to
+				// zero. Latched: on at EngineOutMatchAoA (timed to be complete as the AoA gets there) or on measured yaw saturation
+				// (filtered > 0.5) at any AoA, MPO included; off only once the AoA is EngineOutMatchHyst under the point, the yaw has
+				// settled (filtered saturation < 0.2) and the stick no longer pulls toward the point.
+				float capO = Plugin.EngineOutMatchAoA;
+				float aAbsO = Mathf.Abs(alpha);
+				float spDirO = sp * ((alpha >= 0f) ? 1f : (-1f));
+				float aRateO = alphaDot * ((alpha >= 0f) ? 1f : (-1f));
+				float tCapO = (capO - aAbsO) / Mathf.Max(aRateO, 0.5f);
+				bool onO = aAbsO > capO || (spDirO > 0.15f && (aAbsO > capO - MatchBand || (aRateO > 0.5f && tCapO < MatchLeadTime))) || vmcSatF > 0.5f;
+				if (onO)
+				{
+					zeroLatch = true;
+				}
+				else if (zeroLatch && aAbsO < capO - EngineOutMatchHyst && vmcSatF < 0.2f && spDirO <= 0.15f)
+				{
+					zeroLatch = false;
+				}
+				tgtF = (zeroLatch || vmcMatch) ? 1f : 0f;
+				abGateOn = tgtF > 0.001f || matchF > 0.001f;
+				matchYawOn = false;
+			}
+			else if (gateNeed && engOut)
 			{
 				// an engine out: nothing to match; above EngineOutAoACap the throttle is held at the afterburner's start
 				float capO = Plugin.EngineOutAoACap;
@@ -9654,7 +9687,23 @@ namespace Compass_TA30.FCS
 				matchYawOn = false;
 				vmcMatch = false;
 			}
-			if (abGateOn && engOut)
+			if (gateNeed && engOut && EngineOutZeroMatch && Plugin.EngineOutZeroThrust)
+			{
+				matchF = Mathf.MoveTowards(matchF, tgtF, ((tgtF > matchF) ? MatchRiseRate : MatchFallRate) * dt);
+				matchFull = matchF >= 0.995f;
+				if (matchF > 0.001f)
+				{
+					// with a loss set the game's nozzles light no afterburner anyway; the throttle input comes off the afterburner with
+					// the match as well
+					inp.throttle = Mathf.Min(inp.throttle, Mathf.Lerp(1f, engAbStart, matchF));
+					ThrustZeroApply(matchF);
+				}
+				else
+				{
+					ThrustMatchClear();
+				}
+			}
+			else if (abGateOn && engOut)
 			{
 				inp.throttle = Mathf.Min(inp.throttle, engAbStart);
 				matchF = 0f;
@@ -9688,6 +9737,26 @@ namespace Compass_TA30.FCS
 		}
 
 		// hold every stronger engine's dry thrust down to the weakest one's, from the measured RPMs (see VmcApply)
+		// Compass 0.6.0 (Ternion 0.1.9, Turbojet as the Ifrit 1.5.0): the live engine(s) matched to a dead one - zero thrust, through
+		// parasiticThrustLoss (game Turbojet.FixedUpdate: thrust = max(0, (max thrust - loss) x thrust ratio); with a loss set the
+		// nozzles light no afterburner); frac ramps it in
+		private void ThrustZeroApply(float frac)
+		{
+			float lossMax = 0f;
+			foreach (Turbojet eg in tvc.engines)
+			{
+				if (eg == null)
+				{
+					continue;
+				}
+				float loss = Acc.TF_operable(eg) ? (1.3f * Mathf.Max(0f, Acc.TF_staticThrust(eg)) * Mathf.Clamp01(frac)) : 0f;
+				Acc.TF_parasitic(eg) = loss;
+				lossMax = Mathf.Max(lossMax, loss);
+			}
+			engMatchLoss = lossMax;
+			matchApplied = true;
+		}
+
 		private void ThrustMatchApply(float frac)
 		{
 			float target = float.MaxValue;

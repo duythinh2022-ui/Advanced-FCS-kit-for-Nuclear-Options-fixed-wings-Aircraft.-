@@ -574,7 +574,7 @@ namespace Compass_TA30.FCS
 			// engine is matched to the dead one (zero thrust), so its yaw is gone instead of the AoA (Tom, 9 Nov: "match thrust, in this
 			// case zero"; the jet reaches its full AoA on the airframe alone). The weak-engine case keeps EngineDamagedAoACap. Per jet:
 			// Plugin.EngineOutZeroThrust is false where the jet has no zero-thrust match.
-			bool zeroMatchOut = engOut && EngineOutZeroMatch && Plugin.EngineOutZeroThrust && Plugin.EngineAbAoAGate;
+			bool zeroMatchOut = ZeroThrustPlanned();
 			if (fixedNow && !engFixedPrev && asymValid && zeroMatchOut)
 			{
 				// thrust term out from now on: a fresh sweep, the aero-only cap
@@ -2129,6 +2129,27 @@ namespace Compass_TA30.FCS
 			asymCapFiltNeg += (capMedNeg - asymCapFiltNeg) * ((capMedNeg > asymCapFiltNeg) ? kD : kU);
 		}
 
+		// 17 Nov (engine-out zero-thrust match on every twin, Tom 9 Nov rule): with an engine OUT and the zero-thrust match on, the FCS
+		// takes the live engine's thrust away itself from EngineOutMatchAoA up, so its pitch limit is judged with the thrust it will leave
+		// the jet there: none. The nozzle term is out of the low-thrust AoA cap and the nozzles count as not covering pitch from the
+		// engine loss on, so the pull is flown to the airframe's own (no-TVC) limit instead of to the TVC limit with the thrust then
+		// taken away under it (bench, Ifrit, left engine out, full aft at 350 km/h: thrust zeroed at 18-27 deg AoA while rotating at
+		// 53 deg/s toward the 65 deg TVC limit; the airframe alone could not stop it, AoA past 170 deg).
+		private bool ZeroThrustPlanned()
+		{
+			return engOut && EngineOutZeroMatch && Plugin.EngineOutZeroThrust && Plugin.EngineAbAoAGate;
+		}
+
+		// 17 Nov: an engine OUT whose live engine the FCS has matched to zero thrust leaves no thrust split. The laws' engine-out yaw rules
+		// (the yaw-target clamp to the fins' reach, the roll-fight exemption) are for the split, not for the engine count: with the match
+		// full they stand down and the jet flies as a symmetric one at zero thrust (bench, Ifrit, left engine out, zero match: the clamp
+		// held the split decelerons shut for yaw, so they were not there as the airframe's nose-down device at 40-50 deg AoA and the
+		// jet pitched past 90 deg with the stick forward; with it standing down the pull holds 33-44 deg).
+		private bool EngSplitOut()
+		{
+			return engOut && !(matchFull && ZeroThrustPlanned());
+		}
+
 		private void AuthCapFromSweep()
 		{
 			if (!Plugin.LowThrustAoACap || Ia[1, 1] <= 1f)
@@ -2137,7 +2158,7 @@ namespace Compass_TA30.FCS
 				return;
 			}
 			float tvDn = 0f;
-			if (tvc.active && tvc.M != null)
+			if (tvc.active && tvc.M != null && !ZeroThrustPlanned())
 			{
 				float tvLo = float.MaxValue;
 				for (int tk = 0; tk < tvc.N; tk++)
@@ -2203,7 +2224,7 @@ namespace Compass_TA30.FCS
 				return;
 			}
 			// 2.0.9: nozzles not covering pitch: low thrust (T/W under LowThrustTW, released 0.03 above) or DisableTVC
-			noTvcOn = Plugin.DisableTVC || (noTvcOn ? (tw < Plugin.LowThrustTW + 0.03f) : (tw < Plugin.LowThrustTW));
+			noTvcOn = Plugin.DisableTVC || ZeroThrustPlanned() || (noTvcOn ? (tw < Plugin.LowThrustTW + 0.03f) : (tw < Plugin.LowThrustTW));
 			// Ternion 0.1.1: on a jet with no nozzle pitch at all the fixed no-TVC caps are not applied; the swept authority cap
 			// (authCap: where the canards and elevators still have nose-down / nose-up authority) and AoALimitPositive / Negative rule
 			bool negCapOn = noTvcOn && !Plugin.AoAFull65 && !(noVecJet && NoVecUncapped);
@@ -2250,7 +2271,7 @@ namespace Compass_TA30.FCS
 				// 2.0.5: judged by thrust-to-weight (Tom: floor T/W 0.3), release 0.03 above
 				bool tvShort = authFixedOn ? (tw < Plugin.LowThrustTW + 0.03f) : (tw < Plugin.LowThrustTW);
 				// 2.0.8: with the nozzles locked (DisableTVC) they never cover pitch
-				tvShort |= Plugin.DisableTVC;
+				tvShort |= Plugin.DisableTVC || ZeroThrustPlanned();
 				authFixedOn = tvShort || (authFixedOn ? (authCap < Plugin.AoAPos - 0.5f) : (authCap < Plugin.AoAPos - 3f));
 				// Ternion 0.1.1: with no nozzle pitch at all, T/W (vectorable) is always 0, so this fixed NoTvcAoACapPositive (45) capped
 				// every limit above it, MPO included (Tom, 7 Nov: AoALimitPositive 50 flew to 45 and no more). The swept cap alone applies.
