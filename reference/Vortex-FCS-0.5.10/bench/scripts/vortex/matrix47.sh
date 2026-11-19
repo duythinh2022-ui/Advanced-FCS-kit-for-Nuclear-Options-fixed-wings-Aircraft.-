@@ -1,0 +1,12 @@
+#!/bin/bash
+# 0.4.7 matrix: six jets, the five 0.4.7 switches off (must equal the 0.4.6 build) against 0.4.7 -> /tmp/b45/<jet>_{off,on}
+cd /home/claude/vortex
+OFF45="StovlOriginShiftFix=false StovlFwdCapFromNozzle=false StovlGovTiltCredit=false StovlTurnCoordinate=false StovlTurnYawLimit=false"; BUF="ThrustScale=1.12 DragScale=0.885"
+r(){ n=$1; dt=$2; shift 2; DT=$dt ./b4.sh /tmp/b45/${n}_on "$@" & DT=$dt ./b4.sh /tmp/b45/${n}_off "$@" $OFF45 & wait; echo "$n done $(date +%T)"; }
+r bufref 115 mass=11880 $BUF
+r stock 175 mass=11880
+r buflight 60 FuelFrac=0.2 $BUF
+r stk128 200 mass=12800
+r buf136 150 mass=13640 $BUF
+r bufasym 130 mass=11880 $BUF StoreKg=500 StorePart=wing2a_L
+echo ALLDONE

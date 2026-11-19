@@ -2,43 +2,52 @@
 
 **A measured-state fly-by-wire for Nuclear Option aircraft, packaged so you can put it on your own.**
 
-This folder holds the complete flight control system (FCS) behind six Nuclear Option mods: the source of all six plugins,
+This folder holds the complete flight control system (FCS) behind seven Nuclear Option mods: the source of all seven plugins,
 the offline 6-DOF **bench** each one is tested on (a bench is a desktop flight simulator that runs the real FCS code against a
 model of the aircraft, so a change can be tested without the game), a tool that clones any of them onto a new aircraft, and
 this manual.
 
 | Reference jet | FCS version | What the aircraft is |
 |---|---|---|
-| **F-22E Strike Raptor** (Aryx's mod) | 4.3.0 | twin canted fins + rudders, all-moving stabs, flaperons, **pitch-only TVC**; since 3.2.0 a **relaxed-to-neutral airframe** (airframe X2e) |
-| **KR-67 Ifrit** (stock) | 1.3.0 | canted all-moving tails that are also the **yaw axis** (no rudders), split decelerons, **pitch + roll TVC** |
-| **FS-12 Revoker** (stock) | 1.4.1 | **canards**, single fin, delta elevons, **pitch + yaw TVC** |
-| **T/A-30 Compass** (stock trainer) | 0.5.0 | conventional tail slabs, wing-root strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin |
-| **FS-3 Ternion** (Blueprinter mod) | 0.4.0 | **two pitch pairs** (canards + aft elevators), twin rudders, flaperons + rollervons, **no TVC** |
-| **Su-30VXN Gandiva** (kyleisred's Blueprinter mod) | 0.6.0 | canards + stabs + rudders, flaperons, **canted single-axis nozzles** (each nozzle one axis, 32° outboard) |
+| **F-22E Strike Raptor** (Aryx's mod) | 4.5.1 | twin canted fins + rudders, all-moving stabs, flaperons, **pitch-only TVC**; since 3.2.0 a **relaxed-to-neutral airframe** (airframe X2e) |
+| **KR-67 Ifrit** (stock) | 1.5.0 | canted all-moving tails that are also the **yaw axis** (no rudders), split decelerons, **pitch + roll TVC** |
+| **FS-12 Revoker** (stock) | 1.5.0 | **canards**, single fin, delta elevons, **pitch + yaw TVC** |
+| **T/A-30 Compass** (stock trainer) | 0.5.1 | conventional tail slabs, wing-root strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin |
+| **FS-3 Ternion** (Blueprinter mod) | 0.4.2 | **two pitch pairs** (canards + aft elevators), twin rudders, flaperons + rollervons, **no TVC** |
+| **Su-30VXN Gandiva** (kyleisred's Blueprinter mod) | 0.6.5 | canards + stabs + rudders, flaperons, **canted single-axis nozzles** (each nozzle one axis, 32° outboard) |
+| **FS-20 Vortex** (stock) | 0.5.10 | delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**: lift fan, roll posts, three-bearing swivel nozzle (F-35B-style laws) |
 
-> **Status in one line:** the source here rebuilds all six shipped release DLLs byte for byte (Rust core included), and all
-> six benches build, compile their native core and fly. The bench is an approximation of the game and may not match it
-> exactly, but the in-game behaviour of every release in this kit has been **flown and passed by the author (Tom, 12 Nov 2026)**.
+> **Status in one line:** the source here rebuilds all seven shipped release DLLs byte for byte (Rust core included), and all
+> seven benches build, compile their native core and fly (0 differences between the native core and its C# twin). The bench
+> is an approximation of the game and may not match it exactly. The kit 3.1 releases (12 Nov) were **flown and passed by the
+> author**; the releases added since (13–18 Nov) are compiled and benched, and their own release notes say which were flown.
 > Details in [§17](#17-verification-status).
 
-> **Kit 3.1 (12 Nov 2026)** adds Part IV: a control theory primer for modders coming from the stock fly-by-wire
+> **Kit 4.0 (18 Nov 2026)** brings every jet to its newest release and adds a seventh: the **FS-20 Vortex**, the first
+> **STOVL** reference (short take-off / vertical landing: a lift fan, roll posts and a swivelling nozzle flown as effectors of
+> the same allocator; [§8.27](#827-stovl-lift-fan-roll-posts-and-a-swivel-nozzle-vortex)). The **asymmetric-load system is now one
+> shared file** on all seven jets ([§2.19](#219-one-asymmetric-load-system-on-every-jet)); **one engine out** on the twins now means
+> the live engine matched to zero thrust instead of an AoA cap, with a **recovery thrust** when the engine is lost above the
+> no-TVC limit ([§8.28](#828-one-engine-out-zero-thrust-match-and-recovery-thrust)). The 13–18 Nov changes are §19.15–19.22.
+>
+> **Kit 3.1 (12 Nov 2026)** added Part IV: a control theory primer for modders coming from the stock fly-by-wire
 > ([§21](#21-control-theory-primer-for-this-fcs)), the workflow and tools behind the kit and why an LLM agent fit it
 > ([§22](#22-workflow-and-tools)), what to expect doing it by hand ([§23](#23-doing-it-by-hand-caveats)), and airframe aerodynamics recommendations
 > ([§24](#24-airframe-aerodynamics-recommendations-for-modders)).
 >
-> **New in kit 3.0 (12 Nov 2026).** The heavy maths of every jet now runs in a **native Rust core** carried
+> **Kit 3.0 (12 Nov 2026).** The heavy maths of every jet runs in a **native Rust core** carried
 > inside the plugin DLL, bit-identical to the C# on the bench and about 4× faster in game
-> ([§2.18](#218-the-native-rust-core)); an **asymmetric-load AoA limit from a coupled check** of every effector replaces the
-> one-axis check on five jets ([§8.23](#823-asymmetric-loads-the-coupled-check)); loaded roll reversals no longer stop and
+> ([§2.18](#218-the-native-rust-core)); an **asymmetric-load AoA limit from a coupled check** of every effector replaced the
+> one-axis check ([§8.23](#823-asymmetric-loads-the-coupled-check)); loaded roll reversals no longer stop and
 > then spike ([§8.25](#825-a-loaded-roll-reversal-at-one-acceleration)); **flying backwards**, stick and pedals turn the nose
 > the way they point ([§8.24](#824-flying-backwards-the-mirrored-nose-axis)); the main brakes help steer on the ground
 > ([§8.26](#826-ground-steering-with-the-main-brakes)). New bench sets and game-runtime checks are in
 > [§10.8](#108-added-since-kit-20-1012-nov-all-six-benches), building the core in [§15.3](#153-build-the-native-core), and
-> eleven new failure modes in [§13](#13-failure-modes-we-have-hit) (F29–F39). Kit 2.0 (10 Nov) added the Compass, Ternion and Su-30, multi-core
+> eleven new failure modes in [§13](#13-failure-modes-we-have-hit) (F29–F39; kit 4.0 adds F40–F43). Kit 2.0 (10 Nov) added the Compass, Ternion and Su-30, multi-core
 > ticks, the F-22E's relaxed-to-neutral airframe and the push-over work. **Every problem and solution since the first kit
-> (5 Nov) is in [§19](#19-problem-and-solution-log)**; §19.8–19.14 cover 10–12 Nov.
+> (5 Nov) is in [§19](#19-problem-and-solution-log)**.
 
-Written by **Tom (GitHub `duythinh2022-ui`)**, developed with Claude over about 700 builds (Sept–Nov 2026). If you publish a
+Written by **Tom (GitHub `duythinh2022-ui`)**, developed with Claude over about 800 builds (Sept–Nov 2026). If you publish a
 port, credit the original author.
 
 ---
@@ -51,8 +60,8 @@ port, credit the original author.
 | know how the work was done, with which tools, and what to expect doing it by hand | [§22 Workflow and tools](#22-workflow-and-tools), [§23 Doing it by hand](#23-doing-it-by-hand-caveats) |
 | shape your airframe so the FCS can fly it well (CG, margin, surfaces, strakes, thrust line) | [§24 Airframe aerodynamics](#24-airframe-aerodynamics-recommendations-for-modders) |
 | know why a replacement FCS is needed at all | [§1 Why an FCS mod](#1-why-an-fcs-mod-the-vanilla-flight-control-and-its-limits) |
-| understand how this one works | [§2 How it works](#2-how-it-works), then [§3 the six jets](#3-the-six-reference-jets-side-by-side) |
-| fly one of the six jets | [§6 Using it in game](#6-using-it-in-game) |
+| understand how this one works | [§2 How it works](#2-how-it-works), then [§3 the seven jets](#3-the-seven-reference-jets-side-by-side) |
+| fly one of the seven jets | [§6 Using it in game](#6-using-it-in-game) |
 | put it on your own aircraft | [§4 Quick start](#4-quick-start) → [§7 Porting](#7-porting-it-to-your-aircraft) → [§8 Solution library](#8-solution-library-aircraft-configurations-we-have-solved) → [§9 Models](#9-adding-the-models) → [§10 Bench](#10-the-bench) → [§11 Tuning](#11-tuning) |
 | fix something that flies wrong | [§12 Troubleshooting](#12-troubleshooting), [§13 Failure modes](#13-failure-modes-we-have-hit), [§19 Problem and solution log](#19-problem-and-solution-log) |
 | see what changed since the first kit | [§19 Problem and solution log](#19-problem-and-solution-log) |
@@ -68,7 +77,7 @@ also in this folder as a formatted PDF, **`NO-FCS-Kit-Manual.pdf`**, which is ea
 
 1. [Why an FCS mod: the vanilla flight control and its limits](#1-why-an-fcs-mod-the-vanilla-flight-control-and-its-limits)
 2. [How it works](#2-how-it-works)
-3. [The six reference jets side by side](#3-the-six-reference-jets-side-by-side)
+3. [The seven reference jets side by side](#3-the-seven-reference-jets-side-by-side)
 
 **Part II · Use it and build with it**
 
@@ -485,11 +494,11 @@ past ~36°). Pure AoA command was rejected because it tracks guns badly.
 - **Engine-out sideslip trim** (Ternion 0.1.12, `EngineOutSlipTrim`): engine out, controls centred, |AoA| < 25°: the steady
   sideslip is learned (τ 2 s, max 4°) and removed from the sideslip hold, so the jet flies straight instead of creeping
   1–2°/s.
-- **Flying backwards** (all six since 12 Nov, `ReversedFlowNoseAxis`): past 90° AoA the velocity-vector roll's body-roll share
+- **Flying backwards** (all seven; the six since 12 Nov, `ReversedFlowNoseAxis`): past 90° AoA the velocity-vector roll's body-roll share
   is |cos α| instead of cos α (yaw stays sin α), so left stick or left pedal always turns the nose left, on one axis blended by
   AoA: pure yaw at 90°, half and half at 135°, pure roll at 180°. It replaces a sense flip at 100–150° that reversed the yaw
   with the roll (§8.24).
-- **Loaded roll reversals** (all six since 10–11 Nov): with an asymmetric load a reversal flies one roll acceleration from the
+- **Loaded roll reversals** (all seven; the six since 10–11 Nov): with an asymmetric load a reversal flies one roll acceleration from the
   stick flip through the zero crossing, built over the time the rudders need to cross (§8.25).
 - **Hard stop on a reversal** (Su-30 0.5.7, `StopHardOnReversal`): lateral stick against the velocity roll in progress counts
   as a release for the hard stop: "stop the roll or yaw even if that requires the sideslip is outside the margin".
@@ -561,7 +570,9 @@ The FCS assumes nothing about which parts survive. In layers:
    was 35–45°.
 5. **Engine out / damaged engine:** `EngineOutAoACap`, `EngineDamagedAoACap`; **thrust match** (`EngineAbAoAGate`): with one
    engine down on thrust, the healthy one is held to the damaged one's thrust until the AoA comes down, pre-emptively and
-   proportionally, aware of the engine-spacing moment arm.
+   proportionally, aware of the engine-spacing moment arm. With one engine **destroyed** on the Ternion, Ifrit, Su-30 and F-22E
+   the AoA is no longer capped for it: the live engine is matched to zero thrust from 35° AoA, with a recovery thrust when the
+   engine is lost above the no-TVC limit (F-22E, Su-30; §8.28).
 6. **VMC limiter** (`VmcApply`, last resort): when yaw is saturated and sideslip runs away with an engine out, the throttle is
    pulled back. The clamped-away yaw demand counts as saturation (F7 in §13).
 7. **Fuel balance and trim** (`FuelBalance`, `FuelTrimStep`): moves fuel between healthy tanks to hold the CG where the clean
@@ -605,7 +616,7 @@ Added since the first kit:
 
 - **Ground steering** (`GroundSteer`): stock steering while the pedal is held; when released the FCS stops the yaw and holds
   a straight line (an INDI wheel law, `GroundIndi`), with a small controlled drift allowed at high speed (`GroundDrift*`).
-  Since 11–12 Nov (Su-30 0.5.3–0.5.4, then all six) the **main brakes help**: the nose tyre takes the wanted yaw up to its grip,
+  Since 11–12 Nov (Su-30 0.5.3–0.5.4, then all six, and the Vortex from its fork) the **main brakes help**: the nose tyre takes the wanted yaw up to its grip,
   the outside main brake takes the excess (`GroundIndiBrake`), and with the pedal in, the main on the pedal's side gets
   |pedal| × 0.5 (`GroundPedalBrake`) so the jet can be drifted on the runway (§8.26).
 - **Runway pitch:** on the runway the gear-down rate law flies pitch (`GroundRateLaw`), no separate rotation law.
@@ -703,7 +714,8 @@ HarmonyX runs every prefix even after one returns false, so both drew: 1.65× st
 ### 2.18 The native (Rust) core
 
 Since F-22E 4.0.0–4.1.4 (10–11 Nov), and on the other five since 11 Nov, the heaviest pure maths runs in a Rust library,
-`<Jet>_FcsCore` (`F22E_FcsCore`, `Ifrit_FcsCore`, `Revoker_FcsCore`, `Compass_FcsCore`, `Ternion_FcsCore`, `Su30_FcsCore`).
+`<Jet>_FcsCore` (`F22E_FcsCore`, `Ifrit_FcsCore`, `Revoker_FcsCore`, `Compass_FcsCore`, `Ternion_FcsCore`, `Su30_FcsCore`,
+`Vortex_FcsCore`).
 **The C# is the reference; the library must return the same bits** wherever C# float arithmetic is strict 32-bit.
 
 | What runs in Rust | C# entry point | Dev switch ("0. Debug") |
@@ -739,23 +751,49 @@ expression: same operand types, same order, same float / double conversions, no 
 field goes into the shared structs on both sides and the `ABI` number is bumped on both. Then the bench must show zero
 differences with `NativeAllocatorCheck = 2` (every solve solved both ways). See §15.3 for building the library.
 
+### 2.19 One asymmetric-load system on every jet
+
+Until 17 Nov each jet carried its own copy of the asymmetric-load code (the sweep, the coupled check, the AoA cap, the
+low-thrust authority cap, fuel trim, the damage gate), and fixes had gone down only part of the fork chain: the Compass line
+and the Su-30 had pieces the F-22E, Ifrit and Revoker lacked, and the other way round. Tom's rule (17 Nov): **the same shared
+logic on every jet, no fix for one jet only and nothing bolted on top; where a tuned number differs for no airframe reason,
+it stays a per-jet setting.**
+
+- **How it is built.** `AsymShared.cs`, `AsymCap.cs` and `CoupledCap.cs` are the same text on every jet; only the `namespace`
+  line differs. `FcsController` is a `partial` class, so the shared file holds the asymmetric-load methods and their state while
+  each jet's `FcsController.cs` keeps its own laws. Per-jet behaviour comes only through `Plugin` settings (shares, floors,
+  the Su-30-only "remaining useful authority" AoA weighting, `EngineOutZeroThrust`).
+- **The base** was the Su-30's (the most complete), plus what the others had and it lacked, each acting only where a jet has
+  the hardware: the Revoker's hinged-flap snapshot, yaw nozzle as an LP column, stab-travel reserve and canard attached-flow
+  window; the Ifrit's differential nozzles as a column, free nozzles at low thrust and the sliding engine-out limit; the
+  Ternion's slat schedule and engine-out zero-thrust match.
+- **Check it:** `python3 tools/asym_shared/checkshared.py` in any reference tree (sha256 of the namespace-normalised files).
+- **State in this kit.** `AsymCap.cs` and `CoupledCap.cs` are identical on all seven. `AsymShared.cs` is identical on five
+  (F-22E, Ifrit, Ternion, Su-30, Vortex: `07b1e78b2722f37a`); the **Revoker 1.5.0 and Compass 0.5.1 releases carry the first
+  shared text** (`62f3250027774425`, 17 Nov morning), which lacks the engine-out zero-thrust helpers added that afternoon
+  (`ZeroThrustPlanned`, `EngSplitOut`; §8.28). On those two jets `EngineOutZeroThrust` is a constant `false`, so both helpers
+  reduce to the old conditions and the two texts fly the same; the jets were not re-released for it, and the kit keeps the
+  released source so it still rebuilds the shipped DLLs byte for byte. **A new port should copy `AsymShared.cs` from one of the
+  other five.**
+
 [↑ Contents](#contents)
 
-## 3. The six reference jets side by side
+## 3. The seven reference jets side by side
 
 The jets were built one after another, each forked from the one before it: **F-22E → Ifrit → Revoker → Compass → Ternion →
-Su-30**. Each fork kept the laws and changed the effector set, the airframe changes and the tuning. So the newer jets carry
-everything the older ones learned, plus their own pieces.
+Su-30**; the **Vortex** was cloned from the Revoker (16 Nov). Each fork kept the laws and changed the effector set, the airframe
+changes and the tuning. So the newer jets carry everything the older ones learned, plus their own pieces. Since 17 Nov the
+asymmetric-load system is one shared file on all of them (§2.19).
 
 **The three fighters with TVC from the first kit:**
 
-| | F-22E Strike Raptor (4.3.0) | KR-67 Ifrit (1.3.0) | FS-12 Revoker (1.4.1) |
+| | F-22E Strike Raptor (4.5.1) | KR-67 Ifrit (1.5.0) | FS-12 Revoker (1.5.0) |
 |---|---|---|---|
 | Aircraft match (`Registry.IsF22`) | prefab `Aryx_KingRaptor*` or name contains "Strike Raptor" | prefab `Multirole1*` or "KR-67"/"Ifrit" | prefab `Fighter1*` or "FS-12"/"Revoker" |
 | Pitch effectors | 2 all-moving stabilators (`Stabilator`), pitch TVC | 2 canted all-moving tails (`Stabilator`, `elevator_L/R`), pitch TVC | 2 canards (`Stabilator`), outer elevons (`Aileron`, `ElevonPitch`), inner hinged elevons, pitch TVC |
 | Roll effectors | outer + inner flaperons, stab differential | ailerons, decelerons (`Flaperon`), tail differential, **roll TVC** (`TvcDiffEffector`) | outer elevons, inner hinged elevons (`HingeFlapEffector`), canard differential |
 | Yaw effectors | 2 canted rudders, stab differential, opposed flaperons as decelerons (fin loss) | **tail differential is the yaw axis** (no rudders), split decelerons (`SplitEffector`), roll TVC on the sideslip axis | 1 rudder, **yaw TVC** (`TvcYawEffector`), canard differential |
-| Engines | 2, pitch TVC ±20° (`TvcPitchRange`) | 2, 2D nozzles: pitch ±15°, roll (differential) ±15° | 1, pitch ±15°, yaw ±15° |
+| Engines | 2, pitch TVC ±20° (`TvcPitchRange`); one out: zero-thrust match + recovery thrust (4.5.0 / 4.5.1, §8.28) | 2, 2D nozzles: pitch ±15°, roll (differential) ±15°; one out: zero-thrust match (1.5.0, no recovery thrust) | 1, pitch ±15°, yaw ±15° |
 | Surface ranges (code defaults) | stabs +35/−30 TE, rudders ±35, flaperons ±25 | game's own; flaperons ±30 | canards +60/−45 (TE up/down), elevons ±30, inner elevons ±25 |
 | Servo speed | 100°/s (`ActuatorSpeedScale` 1.43 × Aryx's 70) | 100°/s (`SurfaceServoSpeed`) | 100°/s |
 | AoA limits +/− | 65 / 50 | 65 / 60 | 70 / 55 |
@@ -763,14 +801,14 @@ everything the older ones learned, plus their own pieces.
 | Max yaw rate | 75 | 75 | 90 |
 | Airframe aero changes | stall stagger, lift reshape (`LiftShape`), body-lift balance **plus the 3.2.x fore/aft lift schedule (relaxed to neutral, §8.15)**, stab lift peak 36° (was 25), stab downwash 0.6, fin + flap camber, effectiveness ×1.2 on flaperons, stabs and LERX | flap/aileron camber (K 0.46 / 0.57) | elevon stagger (inner 26 knee-preserving, outer 45), camber |
 | Airbrake | Aryx's speedbrake split in the air; ground aero-brake configuration | split decelerons | dedicated airbrakes + trailing-edge brake config, canards down on the runway |
-| Governor specifics | estimator: 3 groups, fitted gains; `RollPaceRateBlend` 0.408, `RollStopSideslip` 4, `PushPlanK` 0.028 | 6 groups, gains 1; rudW from probes; `SlipFrameAlloc`; `TvcYawOffload`; blend 0.4, stop slip 6 | 6 groups, gains 1; rudW from probes; `SlipFrameAlloc`; blend 0.65, stop slip 6, `PushPlanK0` 40 |
+| Governor specifics | estimator: 3 groups, fitted gains; `RollPaceRateBlend` 0.408, `RollStopSideslip` 4, `PushPlanK` 0.028 | 6 groups, gains 1; rudW from probes; `SlipFrameAlloc`; `TvcYawOffload`; blend 0.4, stop slip 6 | 6 groups, gains 1; rudW from probes; `SlipFrameAlloc`; blend 0.65, stop slip 6, `PushPlanK0` 40; `YawTvcNeutralYawGate` (1.4.2) |
 | Asymmetric-load AoA limit | one-axis check (the coupled check is ported but **off**, `AsymCoupledCheck`) | coupled check, share 0.75, replaces the one-axis check (1.2.0) | coupled check with both nozzles counted (1.2.0), also with nozzles locked / low thrust (1.3.0), share 0.7 / 0.8 |
 | Native core | `F22E_FcsCore` (exports `f22e_fcs_*`) | `Ifrit_FcsCore` (`ifr_fcs_*`; two-stage settled solve) | `Revoker_FcsCore` (`rev_fcs_*`) |
 | Unique extras | cosmetic nozzle re-rig and vent doors | `MpoFreeRoll` | render-only hinge visuals |
 
 **The three added in kit 2.0:**
 
-| | T/A-30 Compass (0.5.0) | FS-3 Ternion (0.4.0) | Su-30VXN Gandiva (0.6.0) |
+| | T/A-30 Compass (0.5.1) | FS-3 Ternion (0.4.2) | Su-30VXN Gandiva (0.6.5) |
 |---|---|---|---|
 | What it is | stock trainer / light attack; forked from Revoker 0.8.2 | Blueprinter mod (prefab `P_Trisurface1`); forked from Compass 0.1.11 | kyleisred's Blueprinter mod (`SolarSu30.dll`); forked from Ternion 0.1.8 |
 | Aircraft match | prefab exactly `trainer` (or a clone), or "T/A-30"/"Compass" | prefab `P_Trisurface1` (or a clone), or "Ternion" | aircraftName "Su-30VXN" / "Gandiva" only (other Su-30 mods are left alone) |
@@ -778,20 +816,38 @@ everything the older ones learned, plus their own pieces.
 | Roll effectors | ailerons, flap differential (droop comes off with roll, `FlapRollBias`), slab differential | flaperons (inboard, stall 26) + rollervons (outboard, 45), staggered, camber-coupled | flaperons ±25, stab differential, canted nozzle differential |
 | Yaw effectors | rudders | twin rudders ±35 | rudders ±35, **canted nozzle differential** (proverse roll + yaw) |
 | Engines | 2, fixed nozzles (no vectoring transform) | 2, no TVC | 2 AL-31FP-style single-axis nozzles ±15° canted 32° outboard (`CantedTvc`) |
-| AoA limits +/− | 35 / 30 | 55 / 40 | 75 / 65 (past the limit: soft pitch hold; +3° → MPO law) |
+| AoA limits +/− | 35 / 30 | 55 / 40 | 80 / 75 (0.6.1; past the limit: soft pitch hold; +3° → MPO law) |
 | Max pitch rate | 48 → 60 at full stick | 48 → 60 at full stick | 60 (0.5.7) |
 | Max yaw rate | 90 | 90 | 90 (`FallingLeafYawBoost` 1.2) |
 | Airframe aero changes | strake (LERX) Polhamus vortex lift ×3.4 (`StrakeVortexLift`), CG 0.15 m aft, tail downwash 0.45, camber | canards ×1.1, elevators ×1.2 stalling at 30°, shoulder LERX ×1.13, Revoker-style staggered trailing-edge stall, no downwash | high-AoA drag reshaped to halfway between the Ifrit and Revoker (`HighAoADragShape`), thrust line moved to the CG, CG 0.10 m aft, canards ×1.6, LERX ×1.5, aft body lift ×0.5, the 1.0.0 mass layout restored on 1.0.1 (`Su30CgReference`) |
-| Damage / engine-out specifics | `VmcPredict`, `AsymPitchBias`, `StabRollGovernor`, `AsymDamageGate` | `StructureFix` (tail stays when an engine dies), engine-out zero-thrust match, spin recovery, `EngineOutSlipTrim` (`LiveAuthCap` off since 0.2.2) | inherits the Ternion's; `AsymStopTime`, `CplKnee` |
+| Damage / engine-out specifics | `VmcPredict`, `AsymPitchBias`, `StabRollGovernor`, `AsymDamageGate`; engine out: AoA cap (no zero-thrust match) | `StructureFix` (tail stays when an engine dies), engine-out zero-thrust match (its origin), spin recovery, `EngineOutSlipTrim` (`LiveAuthCap` off since 0.2.2) | inherits the Ternion's; `AsymStopTime`, `CplKnee`; zero-thrust match + recovery thrust (0.6.4 / 0.6.5, §8.28) |
 | Asymmetric-load AoA limit | coupled check (0.4.0), share 0.75, thrust about the offset CG in the load | coupled check (0.2.2, its origin) | coupled check with each canted nozzle as an effector (0.5.0), share 0.8 |
 | Native core | `Compass_FcsCore` (`cmp_fcs_*`) | `Ternion_FcsCore` (`tern_fcs_*`) | `Su30_FcsCore` (`su30_fcs_*`) |
 | Governor specifics | blend 0.65, stop slip 6 | blend 0.45, stop slip 6 | blend 0.4, stop slip 10, `TradeCapTau` 0.45, low-speed TVC roll, `StopHardOnReversal` |
 | Unique extras | trailing-edge brake set | trailing-edge brake set; stock split airbrake / split yaw off in flight | ground TVC on roll + pedals, `FuelCgHold`, `GyroBudget`, `SoftPitchHold`, `HighAoAPitchBump`, flaperon flap schedule at any gear state |
 
-Performance profile (Buffed): thrust ×1.08 (Su-30 ×1.15), fuel burn ×0.75 (Ifrit / Revoker / Su-30 ×0.65), parasitic drag
+**Added in kit 4.0, the first STOVL jet:**
+
+| | FS-20 Vortex (0.5.10) |
+|---|---|
+| What it is | stock STOVL fighter (prefab `SmallFighter1`); cloned from Revoker 1.4.2 on 16 Nov, F-35B-style STOVL laws added (§8.27) |
+| Aircraft match | prefab `SmallFighter1*`, or "FS-20" / "Vortex" |
+| Pitch effectors | outer + inner elevon pairs (delta), pitch nozzle ±15° (0.3.13); in STOVL also the **lift fan** (pitch) and the fan's **vane box** (0.5.0) |
+| Roll effectors | elevons ±40 (0.3.12), modelled as flaps acting on the wing ahead of them (0.3.1); in STOVL the **roll posts** |
+| Yaw effectors | twin rudders ±35 (0.3.12), elevon differential; in STOVL the swivel nozzle's **yaw bearing** (±15°) |
+| Engines | 1, pitch ±15°; the three-bearing swivel nozzle (0 = aft, ~90° down) commanded by the FCS in STOVL |
+| AoA limits +/− | 65 / 55 (0.3.15); **24 each way while STOVL is active**, and no conversion above it (0.3.5) |
+| Max pitch / yaw rate | 60 / 90 |
+| Airframe aero changes | delta-wing vortex lift on the wing panels, elevon stall stagger 40 / 55, no elevon flap bias (0.3.1); Buffed thrust ×1.12 on engine, lift fan and posts |
+| Asymmetric-load AoA limit | shared code (§2.19), share 0.7, AoA floor 10 (0.3.2); `ReleaseGuard`: in STOVL a weapon release the hover could not trim is held (hold the trigger 1 s to drop) |
+| Governor specifics | the F-22E's margins: blend 0.408, stop slip 4 (0.3.14); loaded-roll sideslip fix in the allocator (Vortex only, 0.3.4); `YawTvcNeutralYawGate` (from the Revoker) |
+| Native core | `Vortex_FcsCore` (exports keep the Revoker's `rev_fcs_*` names; the library name is what keeps the two apart) |
+| Unique extras | STOVL HUD (throttle gauge in knots, ship-match "H" icon), zero-ground-speed throttle detent, ship-relative hover, pedal pirouette key, render-only vane box under the lift fan |
+
+Performance profile (Buffed): thrust ×1.08 (Su-30 ×1.10 since 0.6.2, Vortex ×1.12), fuel burn ×0.75 (Ifrit / Revoker / Su-30 ×0.65), parasitic drag
 ×0.885–0.90, flares ×10, gun ×2, EW ×1.5 / ×1.2. Stock = the original aircraft's numbers.
 
-`docs/CONFIG_REFERENCE.md` has every key (492 of them) with all six defaults; `docs/MODULE_MAP.md` lists every file with its
+`docs/CONFIG_REFERENCE.md` has every key (597 of them) with all seven defaults; `docs/MODULE_MAP.md` lists every file with its
 size on each jet and how far each jet has moved from the one it was forked from.
 
 **Which reference to start from:**
@@ -804,6 +860,7 @@ size on each jet and how far each jet has moved from the one it was forked from.
 | no TVC at all, a conventional tail, strakes / LERX | **Compass** | the no-TVC damage protections (`AsymPitchBias`, `StabRollGovernor`), fixed-nozzle engine-out (`VmcPredict`), strake vortex lift |
 | two pitch surfaces (canards **and** a tail), or a Blueprinter jet, or a twin with no TVC that must survive an engine out | **Ternion** | two `Stabilator` pairs priced so they don't fight; `StructureFix`; zero-thrust match; spin recovery; MPO without TVC |
 | single-axis or canted nozzles, thrust line off the CG, or a jet that must roll about its nozzle axis when slow | **Su-30** | `CantedTvc`, `ThrustLineAtCg`, low-speed TVC roll, measured capture, soft AoA limit; also the only jet with every feature above |
+| STOVL / VTOL: a lift fan, lift jets, roll posts or a swivelling nozzle | **Vortex** | the only reference with STOVL laws (§8.27): hover, conversion, translational-rate command, lift-system effectors in the allocator; its CTOL side is the Revoker's |
 | none of the above / not sure | **Revoker** or a later fork | the stock-jet lineage (Ifrit → Su-30) counts every effector in the estimator; the F-22E's estimator drops non-surface effectors (§9.1.4) |
 
 [↑ Contents](#contents)
@@ -814,10 +871,10 @@ size on each jet and how far each jet has moved from the one it was forked from.
 
 ## 4. Quick start
 
-### 4.1 I just want to fly one of the six jets
+### 4.1 I just want to fly one of the seven jets
 
 Install the release from the author's GitHub or from NOMM (the Nuclear Option Mod Manager). Everything in §6 applies. The
-Ternion and Su-30 FCS need their aircraft mods installed (the FS-3 Ternion blueprint, kyleisred's Su-30VXN); the other four
+Ternion and Su-30 FCS need their aircraft mods installed (the FS-3 Ternion blueprint, kyleisred's Su-30VXN); the other five
 fly stock or Aryx's jets.
 
 ### 4.2 I want this FCS on my aircraft
@@ -825,7 +882,7 @@ fly stock or Aryx's jets.
 1. Read §2 (how it works) at least down to §2.5, and §3 to pick the reference jet closest to your aircraft.
 2. Clone it under your aircraft's identity:
    ```bash
-   python3 tools/new_airframe.py --from <f22e|ifrit|revoker|compass|ternion|su30> --out ~/MyJet-FCS --ns MyJet.FCS \
+   python3 tools/new_airframe.py --from <f22e|ifrit|revoker|compass|ternion|su30|vortex> --out ~/MyJet-FCS --ns MyJet.FCS \
        --title "MyJet FCS" --short "MyJet FCS" --file-prefix MyJet --prefab <your prefab name> --match "<part of your aircraftName>"
    ```
    `--prefab` is optional: without it the jet is matched by its aircraftName only (what the Su-30 does).
@@ -837,12 +894,14 @@ fly stock or Aryx's jets.
 
 ```bash
 sudo apt install -y dotnet-sdk-8.0 python3 python3-pandas python3-numpy python3-scipy   # Linux or WSL2
-cd reference/Revoker-FCS-1.4.1           # or Ifrit-FCS-1.3.0 / Compass-FCS-0.5.0 (extract the airframe files first: §5)
+cd reference/Revoker-FCS-1.5.0           # or Ifrit-FCS-1.5.0 / Compass-FCS-0.5.1 / Vortex-FCS-0.5.10 (extract the airframe files first: §5)
 bash bench.sh build                       # sync the FCS source into bench/fcs, generate the config stub, compile
 bash bench.sh fly ias=400 alt=1500 thr=1 T=6 pitch=0:0,0.2:1 roll=0:0,1.5:0,1.7:1 fcslog=bench/out/x.csv
 bash bench.sh suite base                  # the regression suite (~10 min on 2 cores)
 ```
-The F-22E bench uses `bench.sh one ...` instead of `fly`. Every bench builds without its airframe files but needs them to fly
+The F-22E bench uses `bench.sh one ...` instead of `fly`. The Vortex bench also has a STOVL mode:
+`dotnet bench/bin/bench.dll stovl ias=250 alt=300 T=60 tog=1 thr=0:0.15,7:0,31:0.25` (conversion at 250 km/h, decelerate to a
+hover; `ground=1` starts on the gear; the lift system is read from `vortex_systems.json` beside `BENCH_DATA`). Every bench builds without its airframe files but needs them to fly
 (game or third-party data, not published: §5); point `BENCH_DATA` (and `BENCH_DMG`) at your own extract.
 Details in §10.
 
@@ -852,22 +911,27 @@ Details in §10.
 
 ```
 NO-FCS-Kit/
-├── README.md                     this manual
+├── README.md                     short front page (GitHub)
+├── MANUAL.md                     this manual
+├── LICENSE                       PolyForm Noncommercial 1.0.0
 ├── NO-FCS-Kit-Manual.pdf         this manual as a formatted PDF
 ├── AGENTS.md                     rules + procedures for AI models
 ├── docs/
-│   ├── CONFIG_REFERENCE.md       every config key, six jets side by side (generated)
+│   ├── CONFIG_REFERENCE.md       every config key, seven jets side by side (generated)
 │   ├── MODULE_MAP.md             every source file: layer, role, size, divergence (generated)
 │   ├── papers/                   Tom's write-ups (Sept / Oct 2026)
 │   └── design-history/           the newest design hand-offs
 ├── reference/
-│   ├── F22E-FCS-4.3.0/           plugin folder Aryx_F22E_StrikeRaptor.FCS/; studies/ (airframe study kit, push scoring,
+│   ├── F22E-FCS-4.5.1/           plugin folder Aryx_F22E_StrikeRaptor.FCS/; studies/ (airframe study kit, push scoring,
 │   │                             the loaded-reversal port hand-off)
-│   ├── Ifrit-FCS-1.3.0/          plugin folder Ifrit_KR67.FCS/
-│   ├── Revoker-FCS-1.4.1/        plugin folder Revoker_FS12.FCS/
-│   ├── Compass-FCS-0.5.0/        plugin folder Compass_TA30.FCS/
-│   ├── Ternion-FCS-0.4.0/        plugin folder Ternion_FS3.FCS/; tools/ (bench analysis scripts)
-│   └── Su30-FCS-0.6.0/           plugin folder Su30_VXN.FCS/; tools/
+│   ├── Ifrit-FCS-1.5.0/          plugin folder Ifrit_KR67.FCS/
+│   ├── Revoker-FCS-1.5.0/        plugin folder Revoker_FS12.FCS/
+│   ├── Compass-FCS-0.5.1/        plugin folder Compass_TA30.FCS/
+│   ├── Ternion-FCS-0.4.2/        plugin folder Ternion_FS3.FCS/
+│   ├── Su30-FCS-0.6.5/           plugin folder Su30_VXN.FCS/
+│   └── Vortex-FCS-0.5.10/        plugin folder Vortex_FS20.FCS/; tools/vanebox/ (vane box mesh generator),
+│                                 tools/smoke/ (offline type-load smoke test under Mono)
+│       (every tree)              tools/asym_shared/ (checkshared.py: the shared asymmetric-load files, §2.19)
 │       ├── <Namespace>.FCS/      the plugin: laws, models, glue (one DLL)
 │       ├── native/               the Rust core: fcs_core/ (source), prebuilt/<Lib>.dll (the core embedded in the shipped
 │       │                         DLL), build.sh (Windows DLL or the bench's Linux .so), verify/ (game-Mono harness), README.md
@@ -884,11 +948,12 @@ NO-FCS-Kit/
     ├── new_airframe.py           clone a reference onto a new aircraft
     ├── gen_config_reference.py   regenerate docs/CONFIG_REFERENCE.md
     ├── gen_module_map.py         regenerate docs/MODULE_MAP.md
-    └── build_manual_pdf.py       rebuild NO-FCS-Kit-Manual.pdf from README.md
+    └── build_manual_pdf.py       rebuild NO-FCS-Kit-Manual.pdf from MANUAL.md
 ```
 
 **Not included, on purpose:** airframe data extracted from the game or from other people's mods.
-- Ifrit, Revoker, Compass: `bench/extract/<jet>_airframe.json`, `bench/data/<jet>_damage.json` (the stock game's assets);
+- Ifrit, Revoker, Compass, Vortex: `bench/extract/<jet>_airframe.json`, `bench/data/<jet>_damage.json` (the stock game's assets;
+  the Vortex also `vortex_systems.json`, its lift system, and borrows the Revoker's damage file);
 - F-22E: `bench/data/airframe_cal.json`, `bench/data/f22e_damage.json` (Aryx's asset bundle);
 - Ternion: `bench/extract/ternion_airframe.json`, `bench/data/ternion_damage.json` (someone else's Blueprinter blueprint);
 - Su-30: `bench/extract/su30_airframe.json`, `su30_101_airframe.json` (kyleisred's mod; its bench borrows `ternion_damage.json`).
@@ -899,7 +964,7 @@ compare against the Compass and Revoker files.
 
 **Not included either:** the F-22E's suite outputs of single runs, each bench's `bin/`, `obj/`, `out/` and synced `fcs/` copy
 (rebuilt by `bench.sh build`), and the Rust build folders (`native/fcs_core/target/`). The F-22E's 9 Nov airframe study kit
-*is* included, as `reference/F22E-FCS-4.3.0/studies/` (§8.15). The prebuilt cores in `native/prebuilt/` are included: they are
+*is* included, as `reference/F22E-FCS-4.5.1/studies/` (§8.15). The prebuilt cores in `native/prebuilt/` are included: they are
 the exact libraries embedded in the shipped DLLs, so `build.sh` reproduces the release byte for byte without a Rust toolchain.
 
 **"Bare" versus complete.** Each reference tree is the *complete* plugin, byte-for-byte what ships, because that is the only
@@ -984,7 +1049,7 @@ The parts that do not transfer automatically are the ones that name or count spe
 
 ### 7.2 Clone
 ```bash
-python3 tools/new_airframe.py --from <f22e|ifrit|revoker|compass|ternion|su30> --out <dir> --ns <YourJet.FCS> \
+python3 tools/new_airframe.py --from <f22e|ifrit|revoker|compass|ternion|su30|vortex> --out <dir> --ns <YourJet.FCS> \
     --title "<Display FCS>" --short "<Log name>" --file-prefix <CsvPrefix> [--prefab <PrefabPrefix>] \
     --match "<aircraftName part>" [--match ...]
 ```
@@ -994,7 +1059,10 @@ the log prefix, the flight-log file prefix and `FcsApi.FcsName`; sets the versio
 `bash bench.sh build` compiles the clone. It changes **no** law, limit or tuning value; a clone made with the reference jet's
 own identity produces identical bench output (checked on 12 Nov: clones of all six under a new identity build the game DLL
 with the renamed core embedded and the bench with the renamed Linux core; the F-22E, Compass and Su-30 clones fly the same
-bench case as their reference, every column identical except the wall-clock timer columns).
+bench case as their reference, every column identical except the wall-clock timer columns. Re-checked for kit 4.0 on 18 Nov
+with the Vortex, Su-30 and Compass trees: DLL and bench build; the Vortex clone flies the STOVL conversion-to-hover case and
+the Su-30 clone a pull-and-roll case identically to their references). From the Vortex the tool also rewrites the namespace in
+`tools/smoke/`.
 
 It also **renames the native core** to `<file-prefix>_FcsCore` (the `Lib` constant in `FcsNative.cs`, Cargo's `[lib]` name,
 the bench's copy step, `native/prebuilt/<Lib>.dll`). Windows binds a `DllImport` by module name, so a clone that kept the
@@ -1062,7 +1130,7 @@ From `docs/MODULE_MAP.md`, layer by layer:
 | EXTRA | `Countermeasures`, `DragRelief`, `NozzleRig/Kinematics/MeshData` (F-22E), `VisualHinge` (Revoker lineage) | delete: each is attached from `Registry` (one call each) and configured in `Plugin`; `Countermeasures` also patches `PowerSupply.ModifyCapacitance` in `Plugin.ApplyPatches`, and `HostLockVariant` locks its capacities |
 | threading | `EstimatorJob`, `ParallelFcs`, `TelemetryRow`, `TickStats` | keep: switching them off (Dev "0. Debug") gives the single-thread path without deleting code; deleting needs the call sites in `Tick`, `Telemetry` and the effectors' `Eval*` split undone |
 | native core | `FcsNative`, `native/` | keep: with the core missing or failing its self-tests everything falls back to C#. To ship without Rust, build from a tree with `native/prebuilt/` empty (`build.sh` then embeds nothing and says so); the C# runs, about 4× slower per tick |
-| coupled check | `CoupledCap` | keep on any jet that carries stores or can lose a wing section; it is the asymmetric-load limit on five of the six |
+| coupled check | `CoupledCap` | keep on any jet that carries stores or can lose a wing section; it is the asymmetric-load limit on six of the seven (off on the F-22E) |
 
 After deleting, build the real DLL (§15) *and* the bench, and run the suite: a deletion must not change bench output
 (byte-identical, §14) unless you meant it to.
@@ -1080,8 +1148,8 @@ After deleting, build the real DLL (§15) *and* the bench, and run the suite: a 
 ## 8. Solution library: aircraft configurations we have solved
 
 Each card: the configuration, the problem it posed, the solution in the code, and where to find it. Use them as patterns.
-The library is not complete: VTOL / STOVL, swing wings, tailless designs, propeller aircraft and other layouts have not been done
-yet ([§24.10](#2410-configurations-not-done-yet)).
+Since kit 4.0 it includes one STOVL jet (§8.27). It is not complete: other lift systems, swing wings, tailless designs, propeller
+aircraft and other layouts have not been done yet ([§24.10](#2410-configurations-not-done-yet)).
 
 ### 8.1 Pitch-only TVC that offloads the stabs (F-22E)
 - **Problem:** the stabs are needed for roll and yaw at high AoA; using them for pitch leaves no lateral authority.
@@ -1153,13 +1221,13 @@ yet ([§24.10](#2410-configurations-not-done-yet)).
 - Finding: staggering alone does not add roll authority (a pair parked on its own lift peak still cancels); it improves
   low-AoA static stability. Keep-peak-CL mode is the default; keep-slope mode lost 15–30 % roll.
 
-### 8.11 Camber coupling (all six)
+### 8.11 Camber coupling (all seven)
 - NO flies a deflected surface as its own plate; on a real section the fixed part ahead carries part of the extra force.
   `CamberForce` adds the correction force at the host's centre of lift; `Camber.HostOf` maps each surface to its host part by
   name; K from thin-airfoil flap theory and the chord fraction (F-22E fins ≈ 0.5, Ifrit flaps 0.46 / ailerons 0.57, Revoker
   inboard flaps 0.46). The FCS models include the same term. Camber raised the Ifrit's roll at 135 kt from 106 to 151°/s.
 
-### 8.12 Asymmetric loads and damage (all six)
+### 8.12 Asymmetric loads and damage (all seven)
 - §2.11; the asymmetric-load limit itself is §8.23. The pieces that transfer unchanged: asymmetric-load cap, yaw-health scaling, the yaw-target clamp, fuel balance/trim.
   The pieces that need per-jet thought: what "fin loss" means (Ifrit: a tail is pitch *and* yaw; Revoker: one fin), the VMC
   arm (engine spacing), single-engine jets (no thrust asymmetry to match).
@@ -1171,8 +1239,9 @@ yet ([§24.10](#2410-configurations-not-done-yet)).
   needs an explicit dead band.
 
 ### 8.13 Engine out / damaged engine (twin-engine jets)
-- Thrust match before VMC; VMC aware of the engine-spacing arm; engine-out AoA cap (Ifrit: dynamic 22 → 18° as the yaw nears
-  what can be compensated; F-22E: 30°); damaged-engine cap 50° (F-22E).
+- Thrust match before VMC; VMC aware of the engine-spacing arm; damaged-engine cap 50° (F-22E). The engine-out AoA cap (Ifrit:
+  dynamic 22 → 18°; F-22E 30°; Su-30 22°) was **replaced on the TVC twins in kit 4.0** by the zero-thrust match and recovery
+  thrust (§8.28); the Compass keeps a cap.
 - **Fixed nozzles** (Compass, Ternion): a jet whose engines have no vectoring transform had its thrust moment skipped
   entirely, so with an engine out the live engine's yaw read 0. Take the thrust moment as it is (roll/yaw only, engine out
   only), and limit the throttle **predictively** once that yaw passes 70 % of the yaw authority at the predicted dynamic
@@ -1439,7 +1508,7 @@ went against the stick: full left pedal at 100° gave yaw +25 °/s (nose right);
 **Tom's rule (12 Nov, for every jet):** flying backwards, roll and yaw don't reverse. Left stick or left pedal = the nose rolls
 and yaws left toward the airframe's forward direction, on one axis blended by AoA, not two separate axes.
 
-**Solution** (`ReversedFlowNoseAxis`, F-22E 4.3.0, then all six): the body-roll share is **|cos α|** instead of cos α; yaw stays
+**Solution** (`ReversedFlowNoseAxis`, F-22E 4.3.0, then all six; the Vortex from its fork): the body-roll share is **|cos α|** instead of cos α; yaw stays
 sin α. Pure yaw at 90°, half and half at 135°, pure roll at 180°: forward flight mirrored about the wings (135° answers like
 45°). |cos| is continuous through 90°, so nothing flips. The pace window, the capacity estimator and the TVC vector roll's
 start angle (Su-30) use the same axis. Negative AoA mirrors forward flight's negative side (like a push-roll). The sideslip
@@ -1498,6 +1567,80 @@ below the stock term. Hooks: a prefix on `LandingGear` writes the leg's brake.
 (3.94 m) for the same speed cost. Results (gyaw bench, no aero): release stops 7–17 kt 20 % shorter (10 kt: 1.67 → 1.33 s), full
 pedal sideslip 12.9 → 20.0° at 8 kt; 5–7 kt more speed lost in a stop. Ported to all six (F-22E 4.1.5, Ifrit 1.1.3, Revoker 1.3.1,
 Compass 0.4.2, Ternion 0.3.2). Not flown.
+
+### 8.27 STOVL: lift fan, roll posts and a swivel nozzle (Vortex)
+
+**Problem.** Below wing-borne speed there is almost no aerodynamic authority: attitude and position come from thrust alone. The
+stock FS-20's lift system (`SwivelDuctSystem`, read from the game's code) is a three-bearing swivel nozzle (0 = aft, 1 ≈ 90°
+down, slewed at 0.25 /s; its first bearing also yaws ±15° at every speed), a lift fan whose doors open with the swivel (the
+game sets its force to cancel the main nozzle's pitch moment, plus a pitch term), and two roll posts (8 kN each × thrust ratio,
+one side at a time, below 120 m/s). The game flies it with fixed mixing and auto modes; nothing knows the jet's authority.
+
+**Solution** (`Stovl.cs`, `SwivelLink.cs`, `StovlHooks.cs`; Vortex 0.1.0 → 0.5.10):
+- **The lift system becomes allocator effectors** like any surface: lift-fan pitch, the roll posts, the nozzle's yaw bearing,
+  and since 0.5.0 the fan's **vane box** (thrust line 10° forward to 42° aft at 30°/s). The same INDI rate loop and allocator do
+  the attitude control in the hover as in forward flight. `StovlHooks` swaps the allocator's commands into the game's
+  `SwivelDuctSystem.FixedUpdate` and the STOVL laws' throttle into the engine for the duration of the call, while the FCS owns
+  the lift system (FCS engaged, human pilot).
+- **F-35B-style unified laws** (after the VAAC Harrier "Unified" scheme). Conversion and reconversion by holding Flight Assist
+  (button only, ≤ `StovlConversionMaxIas` 460 km/h; AoA limited to `StovlAoALimit` 24° while STOVL is active). The throttle is
+  a **speed lever**: acceleration around a centre detent at speed, ground speed around an aft detent in the hover
+  (`StovlAftDetent`, a hold detent for keyboard throttles, up to −30 kt behind it). The stick is flight-path rate blending to
+  height rate; lateral stick is roll rate → bank → **translational rate** (sideways speed) in the hover; pedals are sideslip →
+  yaw rate. Hands off: zero ground speed and zero vertical speed on every axis. The FCS chooses the pitch attitude
+  (`StovlHoverAttitude` 3°).
+- **Incremental translational loops.** The propulsive force asked is the force the lift system makes now plus mass × the
+  acceleration error, so the airframe's own lift and drag never have to be modelled for them (the same idea as INDI).
+- **Authority, not schedules** (Tom: as few fixed gains as possible). Climb, sink, crab, bank and yaw budgets come from the lift
+  system's live authority, so a heavier jet gets smaller ones; a commanded vertical speed has priority and the other axes give
+  up lift for it; full stick asks for the speed the jet can stop from in a set time (`StovlTrcStopTime`, `StovlYawStopTime`,
+  `StovlTiltStopTime`: one stop time per kind of motion, calibrated once at a reference weight). What stays fixed are the mode
+  boundaries the pilot must be able to predict (`StovlRegimeShift`, the conversion speeds).
+- **Hand-over to wing-borne flight.** Above 40 kt the CTOL pitch and lateral laws blend in by airspeed (fully by 60 kt, the
+  hand-overs moved 10 kt later in 0.5.6), with the lift system as the wing's helper; the lever becomes thrust. This is the
+  short-take-off fix of 0.2.9.
+- **Guards.** A weapon release that would leave more lateral imbalance than the roll effectors can trim is held
+  (`ReleaseGuard`: hold the trigger 1 s to drop); a conversion is refused when the jet is already too unbalanced (hard guard).
+  Stability Assist off in STOVL ("freestyle") holds the engine's thrust at the switch and limits roll rate and bank to what the
+  posts can stop (0.5.4 / 0.5.7).
+- **The ship.** `StovlShipRelative`: within 800 m of a ship the hover references the ship's speed, blended in and out, with the
+  game's auto-hover "H" icon shown (flashing while blending).
+
+**Evidence (bench).** Conversion at 250 km/h to a hover, wings level, 0 native fallbacks over 32,976 solves (§17). Vane box:
+hover → 30 kt in 4.35 s (was 6.70) at a level attitude, height band −0.8 / +3.8 cm. Sideways (0.5.10): full-stick side speed
+7.2 kt, 90 % reached in 2.65 s, stop in 2.57 s, bank ≤ 12.3°, height −2 / +1 cm. The STOVL side is modelled from the game's code,
+not calibrated against a flight log.
+
+**Porting it.** Start from the Vortex (`--from vortex`). `SwivelLink` reads the FS-20's private nested types by reflection; another
+lift system (lift jets, puffers, a different nozzle) needs its own reader and effector models, and a bench plant for it
+(`bench/sim/BenchStovl.cs` reads `vortex_systems.json`). The CTOL side is the Revoker's lineage.
+
+### 8.28 One engine out: zero-thrust match and recovery thrust
+
+**Problem.** With one engine destroyed on a twin, the jets used to cap the AoA for it (Ifrit 22° sliding to 18°, Su-30 22°,
+F-22E 30°), well below what the airframe can hold. Tom's rule (9 Nov, every FCS mod): no AoA cap for an engine out; match the live
+engine's thrust to the dead one's, zero if it is destroyed, in every mode including MPO.
+
+**Solution** (shared file, `EngineOutZeroThrust` / `EngineOutMatchAoA` 35°; Ternion 0.1.9 first, Ifrit 1.5.0, Su-30 0.6.4, F-22E 4.5.0):
+- From `EngineOutMatchAoA` up, the live engine is held at zero thrust through the game engine's own `parasiticThrustLoss` (with a
+  loss set, the nozzle lights no afterburner). The match is timed to be complete as the AoA gets there, latches at any AoA when
+  the yaw saturates, and lets go only once the AoA is 5° under the point, the yaw has settled and the stick no longer pulls.
+- With no thrust the nozzles cover no pitch, so the limit that holds is the jet's own no-TVC one (Su-30 50°, F-22E 45°, Ifrit
+  45° above ~250 km/h, falling to its 20° authority floor as the speed bleeds).
+- Three pieces were needed beyond the Ternion's version (all in `AsymShared.cs`): the low-thrust AoA cap is judged with the
+  thrust the match will leave (`ZeroThrustPlanned()`); the engine-out yaw rules (yaw-target clamp, roll-fight exemption) stand
+  down while the match is full (`EngSplitOut()`), because they are for a thrust split and there is none; no let-go while the
+  stick still pulls.
+- **Recovery thrust** (F-22E 4.5.1, Su-30 0.6.5): an engine lost while TVC holds the jet above the no-TVC limit would leave it
+  unable to get its nose down at zero thrust (Su-30 held at 87°; Ifrit tail-slid to 166–180°). Now the live engine keeps as much
+  thrust as keeps its yaw at `EngineOutRecoverUse` 0.7 of the fins' authority (thrust yaw from the nozzles' actual thrust, fin
+  authority at the dynamic pressure the deceleration is heading to), the nozzles push the nose down to the limit, and only then
+  does the match go to zero. Never in MPO, inert without pitch nozzles, dropped at once if the yaw saturates.
+
+**Evidence (bench).** Ifrit, MPO full aft at 350 km/h: sideslip 73° and a spin → 1.9°, no spin. Su-30, engine killed at the 80°
+limit, stick held: 86–90° held → 80 → 50° by 6 s, sideslip ≤ 2.3°. F-22E: the nose comes down 65 → 45° in either build; with the
+recovery the thrust stays on through it (+15–18 km/h at 6 s). **Not done:** recovery thrust on the Ifrit; the Compass still
+uses an engine-out AoA cap.
 
 [↑ Contents](#contents)
 
@@ -1769,6 +1912,20 @@ Fix them before using a stock bench for performance numbers.
   40–50° AoA 10.3 → 3.4), thrust yaw from the CG offset, stores found by part name. A heavy-load bench result is only as good as
   this calibration; the Compass bench still has none.
 
+### 10.9 Added in kit 4.0 (13–18 Nov)
+
+- **Vortex STOVL mode** (`dotnet bench/bin/bench.dll stovl ...`, `bench/sim/StovlTest.cs`, plant `BenchStovl.cs`): the lift system
+  (swivel nozzle, lift fan, roll posts, vane box) built from `vortex_systems.json`; profiles for throttle, stick, pedals and the
+  Flight Assist toggle (`tog=`), `ground=1` for take-offs and touchdowns, `mass=`, `wind=`, `mpo=`. Prints the HUD text the game
+  would show, then a summary (bank, sideslip, height band, final position).
+- **`tools/asym_shared/checkshared.py`** in every tree: checks that the shared asymmetric-load files are the same text (§2.19).
+- **Vortex `tools/smoke/`**: loads the plugin DLL under Mono and runs every type's initializer offline (found the 0.5.1 vane box
+  that never attached because of the order partial-class files are compiled in).
+- **`FCS_NATIVE_STATS=<file>`** (every bench): on exit, appends the native core's counters (solves, both-ways checks and
+  mismatches, grid and LP calls, fallbacks). The kit's §17 identity numbers come from it.
+- **Engine-out sets** (Ifrit, Su-30, F-22E): an engine killed at the pull start or N s into a full-aft pull, stick held or released,
+  with and without MPO (see the 1.5.0 / 0.6.4–0.6.5 / 4.5.0–4.5.1 notes for the command lines).
+
 [↑ Contents](#contents)
 
 ## 11. Tuning
@@ -1889,7 +2046,7 @@ bias; use varied manoeuvres.
 ### 12.3 It builds badly
 - **Different md5 than expected:** the assembly name comes from the **output file name**; build to exactly
   `<Namespace with _>_FCS.dll`. Whether `Properties/` and `System.Runtime.CompilerServices/` are included depends on the
-  source dir given to `build.sh`: since kit 3.0 **all six releases are built from the plugin folder** (§15.1). From `.` the
+  source dir given to `build.sh`: since kit 3.0 **all the releases are built from the plugin folder** (§15.1). From `.` the
   result differs and the native core is not embedded.
 - **The plugin builds but `-resource:` fails:** `build.sh` embeds `native/prebuilt/<Lib>.dll`; the clone tool renames it with the
   library (§7.2). Keep the prebuilt core next to the source.
@@ -2103,6 +2260,31 @@ plant. Each was found in flight telemetry, reproduced on the bench and fixed at 
 - *Cause:* the telemetry row made 17 KB of garbage per tick and every 3 ms hitch
 - *Fix:* telemetry off by default, togglable in flight; measure with the switches flipped one by one in one flight
 
+**F40. A pair link stored one way** (Vortex 0.4.5)
+- *Cause:* the allocator's pair index ran left → right only, so the roll-fight cost's "count the stabilator pair's split only"
+  rule held for the left surface; the right one's whole roll, pitch deflection included, was priced as a fight (189 deg/s² of
+  roll that was not there with the airbrake out at 611 kt), on one sign of the roll target only: roll / nose-down cycles
+- *Fix:* a two-way link (`sidx`) for every pair rule; found by zeroing the cost term on the bench (`RollFightCost=0`). The other
+  six jets still have the one-way link (§19.15)
+
+**F41. A fix that defaults on, but a config file that still holds the old `false`** (Vortex 0.3.13)
+- *Cause:* the allocator's pair pass was off by default in 0.3.7–0.3.8 and on from 0.3.9, with no migration; the author's dev
+  file kept `false`, so the high-AoA roll fix never ran there and the jet rolled the wrong way at max AoA
+- *Fix:* when a default changes for a reason, migrate files that still hold the old default (rule 10); regenerate the bench stub
+  from the user's own file when a flight disagrees with the bench
+
+**F42. Static initializers across partial-class files** (Vortex 0.5.1)
+- *Cause:* `VaneBox.cs` sized an array from a field in `VaneBoxData.cs`; the compiler runs a partial class's static
+  initializers in file order (`build.sh` sorts by name), so the field was still null, the type initializer threw and the vane
+  box never attached in game; the bench does not compile the render code, so it could not see it
+- *Fix:* no cross-file static initializer dependencies; `tools/smoke/` runs every type's initializer offline under Mono
+
+**F43. Shared code that drifts after it is unified** (§2.19)
+- *Cause:* the shared asymmetric-load file gained the engine-out helpers the afternoon after the unification; two jets were not
+  re-released because nothing they do changed, so their released source carries the older text
+- *Fix:* run `checkshared.py` across all trees before any release, and say in the notes when a jet is deliberately left on an
+  older shared text
+
 **Lesson** (from the paper): every cost term in a nonlinear allocator needs consistent units with the error term, an explicit
 statement of which state it must not act in, and a test with a deliberately wrong model. Several failures were **bistable**: a
 case landed on either branch depending on a 3 kt change of entry speed, so release sets are flown at several speeds.
@@ -2156,14 +2338,17 @@ These are the rules the author set and the code has been held to. Follow them in
 export NO_MANAGED="<Nuclear Option>/NuclearOption_Data/Managed"   # or edit the default path at the top of build.sh
 export NO_BEPINEX_CORE="<Nuclear Option>/BepInEx/core"
 cd reference
-(cd F22E-FCS-4.3.0    && bash build.sh Aryx_F22E_StrikeRaptor.FCS Aryx_F22E_StrikeRaptor_FCS.dll)
-(cd Ifrit-FCS-1.3.0   && bash build.sh Ifrit_KR67.FCS Ifrit_KR67_FCS.dll)
-(cd Revoker-FCS-1.4.1 && bash build.sh Revoker_FS12.FCS Revoker_FS12_FCS.dll)
-(cd Compass-FCS-0.5.0 && bash build.sh Compass_TA30.FCS Compass_TA30_FCS.dll)
-(cd Ternion-FCS-0.4.0 && bash build.sh Ternion_FS3.FCS Ternion_FS3_FCS.dll)
-(cd Su30-FCS-0.6.0    && bash build.sh Su30_VXN.FCS Su30_VXN_FCS.dll)
+(cd F22E-FCS-4.5.1    && bash build.sh Aryx_F22E_StrikeRaptor.FCS Aryx_F22E_StrikeRaptor_FCS.dll)
+(cd Ifrit-FCS-1.5.0    && bash build.sh Ifrit_KR67.FCS Ifrit_KR67_FCS.dll)
+(cd Revoker-FCS-1.5.0  && bash build.sh Revoker_FS12.FCS Revoker_FS12_FCS.dll)
+(cd Compass-FCS-0.5.1  && bash build.sh Compass_TA30.FCS Compass_TA30_FCS.dll)
+(cd Ternion-FCS-0.4.2  && bash build.sh Ternion_FS3.FCS Ternion_FS3_FCS.dll)
+(cd Su30-FCS-0.6.5     && bash build.sh Su30_VXN.FCS Su30_VXN_FCS.dll)
+(cd Vortex-FCS-0.5.10  && bash build.sh Vortex_FS20.FCS Vortex_FS20_FCS.dll)   # also needs Rewired_Core, Unity.TextMeshPro,
+                                                                              # UnityEngine.UI / UIModule / TextRenderingModule /
+                                                                              # InputLegacyModule from Managed (HUD and input hooks)
 ```
-All six are built from **the plugin folder** (kit 2.0's "." builds for four of them are gone). `build.sh` embeds
+All seven are built from **the plugin folder** (kit 2.0's "." builds for four of them are gone). `build.sh` embeds
 `native/prebuilt/<Lib>.dll` as a resource (`-resource:$CORE,<Lib>.dll`); that prebuilt core is the one the release carries.
 `build.sh` calls the .NET SDK's Roslyn `csc` directly (C# 9, deterministic, against the game's Mono assemblies). With the same
 inputs it reproduces the release DLLs byte for byte (§17). The Dev DLL is compiled from `DevUnlock/FcsDevPlugin.cs` directly
@@ -2199,7 +2384,8 @@ cp native/fcs_core/target/x86_64-pc-windows-gnu/release/<Lib>.dll native/prebuil
 - **Kit verification note:** for kit 3.0 the Linux `.so` was rebuilt for all six (rustup cargo 1.97.0) and every bench ran
   native, but the Windows core could **not** be rebuilt in the kit's environment (no Windows target for that toolchain; the
   apt Rust was 1.91, whose build-std failed). The kit therefore relies on the prebuilt cores, which are exactly the ones inside
-  the release DLLs (the plugin md5s match, §17).
+  the release DLLs (the plugin md5s match, §17). Kit 4.0 is the same: the seven Linux `.so` files were rebuilt (cargo 1.97)
+  and every bench ran native; the Windows cores are the prebuilt ones.
 
 [↑ Contents](#contents)
 
@@ -2236,24 +2422,29 @@ roll unmade (look for a cost holding a trim).
 
 ## 17. Verification status
 
-Checked when this kit was assembled (12 Nov 2026):
+Checked when this kit was assembled (kit 4.0, 18 Nov 2026):
 
-| Check | F-22E 4.3.0 | Ifrit 1.3.0 | Revoker 1.4.1 | Compass 0.5.0 | Ternion 0.4.0 | Su-30 0.6.0 |
-|---|---|---|---|---|---|---|
-| Plugin rebuilt from this folder with `build.sh`, md5 equal to the shipped release DLL (native core embedded) | ✅ `56cc5c3f…` | ✅ `ba48d6a6…` | ✅ `b03819c2…` | ✅ `794d7859…` | ✅ `1e397de2…` | ✅ `16010c75…` |
-| Bench compiles, with the Linux native core (`lib<Lib>.so`) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Bench flies a scripted case from this folder, native paths used (`FCS_NATIVE_STATS`: 0 fallbacks) | ✅ with the private airframe file (§5) | ✅ private file | ✅ private file | ✅ private file | ✅ private file | ✅ private file |
-| Cloned by `tools/new_airframe.py` under a new identity → game DLL (new core name embedded) and bench (new `.so`) both build | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Clone flies the same bench case as the reference (all columns but wall-clock timers identical) | ✅ summary line | — | — | ✅ 602 / 602 rows | — | ✅ 602 / 602 rows |
-| Windows native core rebuilt from source in the kit's environment | ❌ (§15.3: prebuilt core used) | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Native core vs C# twin, both-ways check (from the release notes) | ✅ 427,582 solves, 0 diffs | ✅ | ✅ | ✅ 467,226 LP calls | ✅ | ✅ 526,376 LP calls |
-| Plugin loaded on the game's own Mono under Wine (release notes) | ✅ 4.2.0 (4.3.0: plain C# change, not re-run) | ✅ 1.2.0 (1.3.0 not re-run) | ✅ 1.3.0 | ✅ 0.4.1 | ✅ 0.3.1 | ✅ 0.5.6 |
-| In-game behaviour of this release flown and passed by the author (Tom, 12 Nov) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Check | F-22E 4.5.1 | Ifrit 1.5.0 | Revoker 1.5.0 | Compass 0.5.1 | Ternion 0.4.2 | Su-30 0.6.5 | Vortex 0.5.10 |
+|---|---|---|---|---|---|---|---|
+| Plugin rebuilt from this folder with `build.sh`, md5 equal to the shipped release DLL (native core embedded) | ✅ `5fddd5b4…` | ✅ `8246c4ea…` | ✅ `8ed972be…` | ✅ `75f3e1a6…` | ✅ `ca471980…` | ✅ `b8028905…` | ✅ `66fc0ce1…` |
+| Bench compiles from this folder, with the Linux native core (`lib<Lib>.so`), no airframe files present | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Bench flies a scripted pull-and-roll case (airframe files supplied, §5); native paths used (`FCS_NATIVE_STATS`: 0 fallbacks, 144 coupled LPs) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Same case with `NativeAllocatorCheck=2` (every solve both ways): mismatches | 0 / 2,927 | 0 / 5,302 | 0 / 5,279 | 0 / 5,303 | 0 / 5,310 | 0 / 5,281 | 0 / 5,279 |
+| STOVL case on the bench (conversion at 250 km/h, decelerate to a hover; 0 fallbacks over 32,976 solves) | — | — | — | — | — | — | ✅ 252 → 3 km/h, wings level, height 309–348 m |
+| Cloned by `tools/new_airframe.py` → game DLL (new core name embedded) and bench both build | — | — | — | ✅ | — | ✅ | ✅ |
+| Clone flies the same bench case as the reference | — | — | — | — | — | ✅ identical | ✅ STOVL case identical |
+| Windows native core rebuilt from source in the kit's environment | ❌ (§15.3: prebuilt core used) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Plugin loaded on the game's own Mono under Wine | not re-run for kit 4.0 (kit 3.0: ✅ on all six) | | | | | | not run |
+| **This release flown in game** (its own release notes) | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ 0.5.10 bench only; earlier Vortex builds were flown during development |
+| Kit 3.1 release of this jet flown and passed by the author (Tom, 12 Nov) | ✅ 4.3.0 | ✅ 1.3.0 | ✅ 1.4.1 | ✅ 0.5.0 | ✅ 0.4.0 | ✅ 0.6.0 | (not in kit 3.1) |
 
-What that means for you: the source here *is* exactly what the six releases run, and their in-game behaviour has been flown
-and passed by the author. **The bench is an approximation and may not be accurate:** where a bench number and the game
-disagree, the game is the reference. The bench is good for direction and A-vs-B regressions, never for absolute numbers
-(§10.7). The Compass bench has no flight-log calibration; the Ternion's has one log (§10.8).
+What that means for you: the source here *is* exactly what the seven releases run. The kit 3.1 releases of the first six jets
+were flown and passed by the author; the releases since (shared asymmetric-load code, engine-out zero-thrust match and
+recovery thrust, the Su-30's drag and limits, the Revoker's yaw-nozzle gate, and the whole Vortex) are compiled and benched,
+and their release notes (`release-notes/` in each tree) give each one's own status. **The bench is an approximation and may
+not be accurate:** where a bench number and the game disagree, the game is the reference. The bench is good for direction and
+A-vs-B regressions, never for absolute numbers (§10.7). The Compass bench has no flight-log calibration; the Ternion's has one
+log (§10.8); the Vortex's STOVL side is modelled from the game's code (`SwivelDuctSystem`), not calibrated against a log.
 
 [↑ Contents](#contents)
 
@@ -2288,6 +2479,11 @@ disagree, the game is the reference. The bench is good for direction and A-vs-B 
 | **Push plan** | the push-over's pitch rate planned once at the start from the yaw the jet can shed |
 | **rudW** | how much of the yaw can be added without spending roll |
 | **TVC** | thrust vectoring: steering the engine nozzle to make pitch/roll/yaw moment |
+| **STOVL / VTOL / CTOL** | short take-off and vertical landing / vertical take-off and landing / conventional take-off and landing (normal wing-borne flight) |
+| **Lift fan, roll posts, swivel nozzle** | the FS-20 Vortex's lift system: a fan behind the cockpit blowing down, small downward jets in each wing for roll, and a three-bearing nozzle that turns the main exhaust from aft to straight down |
+| **Conversion** | switching between wing-borne (CTOL) and jet-borne (STOVL) flight; on the Vortex by holding Flight Assist |
+| **Translational-rate command (TRC)** | in the hover, the stick asks for a sideways or fore-aft speed instead of a bank or pitch angle; released, the jet stops over the ground |
+| **Zero-thrust match** | with one engine destroyed, holding the live engine at zero thrust so there is no thrust split to fight, instead of capping the AoA |
 | **Stabilator / canard / ruddervator / elevon / flaperon / deceleron** | all-moving tail / foreplane ahead of the wing / a canted tail doing pitch and yaw / a delta's combined elevator-aileron / a combined flap-aileron / a split surface used as a drag brake for yaw |
 | **Camber coupling** | a deflected flap also changes the lift of the fixed wing ahead of it (real physics NO leaves out; the plugin adds it) |
 | **Staggered stall** | giving surfaces different lift-peak angles so they don't all stall at once |
@@ -2719,9 +2915,113 @@ pedal from 15 kt: peak sideslip 2.6 → 9.3°, speed 19.9 → 9.5 kt.
   under Wine, each jet alone and all six in one process.
 - **Mod manager state** (11 Nov): every FCS mod except the F-22E was listed in `disabledPlugins`, and the Ternion in game was still
   0.2.0 in a nested folder. Its `meta.json` records still list older versions, and a modpack redeploy can put them back (§12.4).
-- **Flight status:** the per-version notes above record what was benched or flown at the time. The releases in this kit
+- **Flight status:** the per-version notes above record what was benched or flown at the time. The releases in kit 3.1
   (F-22E 4.3.0, Ifrit 1.3.0, Revoker 1.4.1, Compass 0.5.0, Ternion 0.4.0, Su-30 0.6.0) have since been flown and passed in game
   by the author (12 Nov 2026).
+
+### 19.15 Kit 3.1 → kit 4.0: across all jets (13–18 Nov)
+- **One asymmetric-load system (17 Nov, §2.19).** Tom: "make all of them use the same thing". F-22E 4.4.0, Ifrit 1.4.0, Revoker
+  1.5.0, Compass 0.5.1, Ternion 0.4.1, Su-30 0.6.3, Vortex 0.3.0, all on one day. Old vs new on each bench: the Su-30 identical on
+  every set; the Compass identical but 4 of 50 damage cases (largest 20.5 → 20.6°); the Ternion 21 of 24 matrix cases within 1°
+  (the sweep's chunk sizing is now latched at sweep start); the F-22E as shipped identical but one roll case (coupled check still
+  off). The Revoker, Ifrit and Vortex moved, for two reasons: the pitch cap now takes its held-pitch figure from the coupled
+  check with the nozzles working (they used the held-load sweep's with the nozzles' whole travel and a fixed 20 deg/s² margin),
+  and "gap tighten" (a limit that must come down a long way comes down up to 4× faster), which the Revoker and Ifrit lacked.
+  Costs left open: the Ifrit with one ruddervator lost, leaf at 370 km/h, sideslip 7.9 → 10.6°; "AoA past the live limit" on
+  throttle chops grows (Ifrit 3.9 → 8.9°) while the AoA itself is lower.
+- **One engine out = live engine at zero thrust (17 Nov, §8.28).** Tom's 9 Nov rule, until then on the Ternion only, ported to the
+  Ifrit 1.5.0, Su-30 0.6.4 and F-22E 4.5.0; then the recovery thrust for an engine lost above the no-TVC limit (F-22E 4.5.1,
+  Su-30 0.6.5). Ternion 0.4.2 takes the shared pieces (no early let-go; engine-out yaw rules stand down at zero thrust).
+- **Still open across the jets.**
+  - The Ifrit has the zero-thrust match but not the recovery thrust: an engine lost while TVC holds it above 45° leaves a jet
+    that can't get its nose down at zero thrust (bench: tail-slide to 166° AoA with the stick held; recovers if released).
+  - The Compass (a fixed-nozzle twin) still uses an engine-out AoA cap, not the zero-thrust match (`EngineOutZeroThrust` is a
+    constant `false` there).
+  - The Revoker 1.5.0 and Compass 0.5.1 releases carry the first shared `AsymShared.cs` text (§2.19).
+  - The Vortex 0.4.5 allocator fix (the stabilator-pair link was one-way, so the right surface's whole roll, pitch included,
+    was priced as a roll "fight"; 189 deg/s² of phantom roll with the airbrake out at 611 kt) is on the Vortex only. The other six
+    still have the one-way link (`pidx` in `Allocator.StabSplitMode` / `GroupRoll`); on them it has not shown in flight, but a
+    port should take the Vortex's `sidx` version (C# and native core together, rule 19).
+
+### 19.16 F-22E Strike Raptor (4.3.0 → 4.5.1)
+- **4.4.0 · Shared asymmetric-load code** (§2.19). As shipped (coupled check off) it flies as 4.3.0 on every bench set but one
+  roll case (within 2 deg/s). With the check on, the 1000 kg pulls still hunt (5–7 raw-limit jumps) on 4.3.0 and 4.4.0 alike;
+  this is why it stays off.
+- **4.5.0 · One engine out: zero-thrust match, no engine-out AoA cap** (was 30°): with no thrust the limit that holds is the
+  airframe's own no-TVC 45° (§8.28).
+- **4.5.1 · Engine lost above the no-TVC limit: recovery thrust.** Tom: "reduce thrust enough that the thing wont spin out, maybe
+  some yaw, but still enough to shove the nose down". Bench, engine killed 3 s into a full-aft pull at 65°: the airframe already
+  brought the nose to 45° by 6 s on its own, so the gain is energy (+15–18 km/h at 6 s); 45.0° captured with no overshoot.
+
+### 19.17 KR-67 Ifrit (1.3.0 → 1.5.0)
+- **1.4.0 · Shared asymmetric-load code.** 16 of 25 matrix cases within 1.5°; throttle-chop "AoA past the live limit" 3.9 → 8.9°
+  (gap tighten; the AoA itself lower); damage suite 18 of 52 differ, all from gap tighten (one ruddervator lost, leaf at
+  370 km/h: sideslip 7.9 → 10.6°). Whether gap tighten stays on for the Ifrit is Tom's open call.
+- **1.5.0 · One engine out: zero-thrust match.** The engine-out AoA cap (22 sliding to 18°) is gone. The three shared pieces were
+  found here: the low-thrust AoA cap judged with the thrust the match will leave (without it the Ifrit pulled toward 65°, lost
+  its thrust at 18–27° while rotating at 53 deg/s and passed 170° AoA); the engine-out yaw rules standing down at zero thrust
+  (the yaw-target clamp had held the split decelerons shut, so they were not there as the nose-down device: pitched past 90°
+  with the stick forward); no let-go while the stick still pulls. Bench: MPO full aft at 350 km/h, sideslip 73° and a spin →
+  1.9°, no spin; full aft + full roll reversal, departs (41°) → 6.1°. Recovery thrust not ported (§19.15).
+
+### 19.18 FS-12 Revoker (1.4.1 → 1.5.0)
+- **1.4.2 · The yaw nozzle parked at neutral in the middle of a yaw stop or reversal.** Tom: "the falling leaf reversal, the tvc
+  stops the yaw then stays at neutral for a split sec then it reverse the yaw direction". Cause: `YawTvcNeutralHold` (meant for a
+  held turn) tested "stick steady" against a copy of the stick that lags it by 0.5–0.95 s, and nothing checked the yaw rate, so
+  it came in mid-stop (log: yaw acceleration 84 → 38 → 65 deg/s²). Fix `YawTvcNeutralYawGate`: the hold fades out as the
+  yaw-rate error grows 2 → 8 deg/s and as the yaw-rate command's own rate grows 5 → 20 deg/s². Carried into the Vortex.
+- **1.5.0 · Shared asymmetric-load code.** 18 of 25 matrix cases within 1.5°; 1160 kg at 300 km/h, AoA past the limit
+  3.5 → 6.8° (gap tighten); loaded reversals mean sideslip 1.90 → 2.00°. Clean sets and damage table identical.
+
+### 19.19 T/A-30 Compass (0.5.0 → 0.5.1)
+- **0.5.1 · Shared asymmetric-load code, no change in how it flies** (matrix 24/24, loaded reversals 264/264 identical; damage
+  suite 4 of 50 differ, largest 20.5 → 20.6°).
+
+### 19.20 FS-3 Ternion (0.4.0 → 0.4.2)
+- **0.4.1 · Shared asymmetric-load code.** Three matrix cases differ in one figure each (peak roll 40.9 → 43.8 deg/s; idle-pull AoA
+  past the limit 4.3 → 2.1°), traced to the sweep's chunk sizing now latched at sweep start.
+- **0.4.2 · Engine-out match: no early let-go; engine-out yaw rules stand down at zero thrust** (the shared pieces of §8.28;
+  the Ternion is where the match came from).
+
+### 19.21 Su-30VXN Gandiva (0.6.0 → 0.6.5)
+- **0.6.1 · AoA limits +80 / −75 by default** (were 75 / 65), the limits Tom had flown from his dev file; migrated once.
+- **0.6.2 · Low-AoA drag, Buffed thrust ×1.10** (was 1.15). Tom wanted a full-aft pull at 330–350 kt to bleed speed like his
+  F-22E. Cause: the Su-30 makes 9 g at 11–13° AoA (the F-22E at 26–33°), where its foils have little drag: drag / weight
+  1.01 against 1.52–1.66, excess power +35 m/s against −66 to −96. `LowAoADrag` adds drag by each part's own AoA (×1 to 4°, up to
+  the gain 1.9 by 12°, back to ×1 by 32°), a quarter of it on the canards so pitch balance stays within −0.13 / +0.30 °/s².
+- **0.6.3** shared asymmetric-load code (identical on every set). **0.6.4** zero-thrust match (cap was 22°; limit now its own
+  no-TVC 50°). **0.6.5 · Recovery thrust:** engine killed at the 80° limit, 350 km/h, stick held: AoA held at 86–90° (soft-limit
+  hold) → 80 → 50° by 6 s, pitch rate −13 to −14 deg/s, sideslip ≤ 2.3°.
+
+### 19.22 FS-20 Vortex (new: 0.1.0 → 0.5.10, 16–18 Nov)
+Cloned from Revoker 1.4.2 on 16 Nov. Tom: "make vortex fcs with f-35b stovl/vtol control laws". About 60 releases in three days;
+the STOVL design is §8.27. The milestones, with what was wrong and what fixed it:
+- **0.1.x · STOVL laws, conversion on Flight Assist, F-35B throttle** (speed lever, zero-ground-speed detent, −30 kt behind it);
+  button-only conversion at ≤ 460 km/h; hands-off hover at zero ground and vertical speed; Buffed thrust ×1.12 on engine, fan and
+  posts.
+- **0.2.x · Authority-based limits and guards.** Vertical speed, crab and bank budgets from the lift system's live authority
+  (a heavier jet gets smaller ones); release guard (a weapon release the hover could not trim is held, hold to drop); a hard
+  conversion guard; **0.2.9** short take-off: above 40 kt the stick kept commanding flight-path rate with the FCS choosing the
+  attitude (AoA −32.7° in the log); now the CTOL laws blend in over 40–60 kt and the lever is thrust.
+- **0.3.0** shared asymmetric-load code. **0.3.1 · Delta roll authority:** elevons modelled as flaps acting on the ~4 m² of wing
+  ahead of them (strip theory, flap effectiveness 0.56, on the wing's lift curve), delta vortex lift, no flap bias (it had
+  parked the inner pair on its stall peak in a loaded roll), stall stagger 40 / 55. **0.3.4 · Loaded-roll sideslip** (Vortex
+  only): in the velocity frame a roll the allocator can't deliver counted as yaw it no longer needed (at 10° AoA 150·sin 10 ≈
+  30·cos 10), so the rudders stayed off; `SlipCreditFade` turns the frame toward the body frame as the roll shortfall grows
+  (below 20° AoA). Heavy-load roll sideslip 4.0 → 1.8°. **0.3.5** AoA limit 24° while STOVL is active. **0.3.13 · Wrong-way roll
+  at max AoA:** the allocator sat in a reversed rudder set; the pair pass that leaves it had been off by default in 0.3.7–0.3.8
+  and no migration turned it on. Migrated on. **0.3.14** the F-22E's lateral governor margins.
+- **0.4.x · Airbrake and the ship.** **0.4.5** the one-way pair link in the allocator's roll-fight cost (§19.15): roll-and-nose-down
+  cycles every ~2.3 s with the brake out at 500–600 kt; bank after 14 s with a +25 deg/s² roll offset −19.0 → 0.4°. Ship-relative
+  hover on by default, blended, with the game's "H" icon (0.4.6–0.4.11).
+- **0.5.x · Vane box and freestyle.** **0.5.0** the lift fan's thrust line turned 10° forward to 42° aft by a vane box, in the same
+  thrust fit as the nozzle: hover → 30 kt in 4.35 s (was 6.70) at a level attitude. **0.5.4** Stability Assist off in STOVL holds
+  the engine's thrust instead of dropping to the lever (was on the ground in 3 s). **0.5.7** freestyle roll was a fixed 90 deg/s
+  the posts could not stop (log: flip at 103° of bank); now the rate the roll axis can stop in 1.25 s and a 45° bank limit while
+  the lift system carries the jet. **0.5.10** faster sideways start / stop (`StovlTrcStopTime` 0.75 s): side speed 10.1 → 7.2 kt,
+  stop 3.15 → 2.57 s.
+- **Status:** every release benched; the game-side code (hooks, HUD, vane box model) compiled only on the bench. Tom flew the
+  development builds through the three days (the logs named in the notes); 0.5.10 itself is not flown.
 
 [↑ Contents](#contents)
 
@@ -2737,8 +3037,8 @@ pedal from 15 kt: peak sideslip 2.6 → 9.3°, speed 19.9 → 9.5 kt.
 - `docs/design-history/F22E_FCS_handoff_2.31.0.md`: the F-22E state at 2.31.0.
 - `reference/<Jet>/native/README.md`: the native core's rules, build and checks (F-22E's is the fullest).
 - `docs/design-history/F22E_airframe_X2_handoff_2026-11-09.md`: the build hand-off for the F-22E's X2 airframe (goals, decision,
-  acceptance targets, phase 2), with the study kit in `reference/F22E-FCS-4.3.0/studies/x2_study_kit/`.
-- Documents named `claude/...md` in this manual are the author's project notes (6–12 Nov findings); they are not in the kit, and
+  acceptance targets, phase 2), with the study kit in `reference/F22E-FCS-4.5.1/studies/x2_study_kit/`.
+- Documents named `claude/...md` in this manual are the author's project notes (6–18 Nov findings); they are not in the kit, and
   what they found is summarised in §8, §10.7–10.8 and §19.
 - Each reference tree's `release-notes/` and its `README.md` / `bench/CALIBRATION*.md` / `bench/DAMAGE.md`.
 
@@ -2746,14 +3046,18 @@ Lineage: SimplePlanes F-22 FCS (Funky Trees) → F-22E FCS 1.4 (21 Sep 2026) →
 (rolling-pull governor, decelerons) → 2.4 (multiplayer policy, ground) → 2.5–2.7 (governor rework) → 2.27–2.44 (one
 reference-capacity governor, push plan, reach pass) → 3.0 → 3.0.4–3.1.3 (several cores) → 3.1.4–3.1.8 (push-over floor and
 hand-offs) → 3.1.9 (fuel hook) → 3.2.0–3.2.1 (relaxed-to-neutral airframe X2 / X2e) → 4.0–4.1 (native core, one DLL,
-loaded reversal, ground brakes) → 4.2.0 (coupled check, off) → 4.3.0 (flying backwards). Ifrit 0.1 (port of 2.2.5) → 0.9 (3.0.0
-governor) → 0.16 → 0.17 (push-over hand-offs) → 1.0.0 (several cores) → 1.3.0. Revoker 0.1 (28 Oct) → 0.6 (3.0.0 governor) → 0.8.3 →
-1.0.0 → 1.4.1. Compass 0.1.0 (5 Nov, fork of Revoker 0.8.2) → 0.1.12 → 0.2.0 → 0.5.0. Ternion 0.1.0 (7 Nov, fork of Compass
-0.1.11) → 0.1.12 → 0.2.0 → 0.4.0. Su-30 0.1.0 (7 Nov, fork of Ternion 0.1.8) → 0.2.3 (10 Nov) → 0.6.0 (12 Nov).
+loaded reversal, ground brakes) → 4.2.0 (coupled check, off) → 4.3.0 (flying backwards) → 4.4.0 (shared asymmetric-load code) →
+4.5.0–4.5.1 (engine out: zero-thrust match, recovery thrust). Ifrit 0.1 (port of 2.2.5) → 0.9 (3.0.0
+governor) → 0.16 → 0.17 (push-over hand-offs) → 1.0.0 (several cores) → 1.3.0 → 1.5.0. Revoker 0.1 (28 Oct) → 0.6 (3.0.0 governor) → 0.8.3 →
+1.0.0 → 1.4.1 → 1.5.0. Compass 0.1.0 (5 Nov, fork of Revoker 0.8.2) → 0.1.12 → 0.2.0 → 0.5.0 → 0.5.1. Ternion 0.1.0 (7 Nov, fork of Compass
+0.1.11) → 0.1.12 → 0.2.0 → 0.4.0 → 0.4.2. Su-30 0.1.0 (7 Nov, fork of Ternion 0.1.8) → 0.2.3 (10 Nov) → 0.6.0 (12 Nov) →
+0.6.5 (17 Nov). Vortex 0.1.0 (16 Nov, clone of Revoker 1.4.2) → 0.3.0 (shared code) → 0.5.10 (18 Nov).
 
 **Kit editions:** 1.0 (5 Nov 2026: F-22E 3.0.1, Ifrit 0.16.0, Revoker 0.8.2); 2.0 (10 Nov 2026: six jets, §19.1–19.7); 3.0
 (12 Nov 2026: F-22E 4.3.0, Ifrit 1.3.0, Revoker 1.4.1, Compass 0.5.0, Ternion 0.4.0, Su-30 0.6.0; native core, coupled check,
-loaded reversals, flying backwards, ground brakes; §19.8–19.14); 3.1 (12 Nov 2026: Part IV, §21–24).
+loaded reversals, flying backwards, ground brakes; §19.8–19.14); 3.1 (12 Nov 2026: Part IV, §21–24); 4.0 (18 Nov 2026:
+F-22E 4.5.1, Ifrit 1.5.0, Revoker 1.5.0, Compass 0.5.1, Ternion 0.4.2, Su-30 0.6.5 and the new Vortex 0.5.10; shared
+asymmetric-load code, engine-out zero-thrust match, STOVL; §19.15–19.22).
 
 [↑ Contents](#contents)
 
@@ -2900,7 +3204,7 @@ $$\min_{\mathbf u}\;\big\lVert W\,\big(B(\mathbf u) - \mathbf m\big)\big\rVert^2
 
 - $B(\mathbf u)$: the moment the effectors make at positions $\mathbf u$ (nonlinear: surfaces stall, reverse, interact).
 - $W$: axis weights (which axis wins when not everything is reachable: here pitch and sideslip outrank roll).
-- The bounds are the travel limits **and** how far each servo can move this tick (100 °/s servos on all six jets, README §3).
+- The bounds are the travel limits **and** how far each servo can move this tick (100 °/s servos on all seven jets, README §3).
 - The costs keep the solution sensible: small deflections, no surfaces fighting each other, nozzles near trim.
 
 Here it is a box-constrained Gauss-Newton solve (README §2.6). What allocation buys: a stalled or missing surface is simply
@@ -2935,7 +3239,7 @@ $\ddot\alpha_\text{max}$ in the current state: thrust, nozzle angle, stall, load
 
 A **gain schedule** stores tuned numbers per flight condition (speed, AoA, altitude) and interpolates. It works on a known,
 undamaged aircraft. This FCS reads authority and limits from the **live** state instead: surface models at their actual local
-AoA, live thrust, measured accelerations (design rule 1, README §14). The payoff is that one law works across six very
+AoA, live thrust, measured accelerations (design rule 1, README §14). The payoff is that one law works across seven very
 different airframes, with damage and stores, without retuning tables per jet. The price is complexity: every model has to be
 right, and the bench has to check it.
 
@@ -2955,7 +3259,7 @@ right, and the bench has to check it.
 
 ### 22.1 The loop every change went through
 
-About 700 builds (Sept–Nov 2026), 210 release notes across the six jets, each through the same loop:
+About 800 builds (Sept–Nov 2026), over 270 release notes across the seven jets, each through the same loop:
 
 1. **Report.** The pilot flies and describes what felt wrong, in his words, with the flight log (`Telemetry` CSV, one row per
    tick, 260+ columns) and `LogOutput.log`.
@@ -3027,7 +3331,7 @@ checks and the next flight are what caught those, not the agent.
 Porting from this kit without an LLM is realistic; developing new laws at this pace is not. What to expect, and how to keep
 it manageable:
 
-- **Time.** Rough estimates, not tested with a human porter: a jet close to one of the six references (same kinds of
+- **Time.** Rough estimates, not tested with a human porter: a jet close to one of the seven references (same kinds of
   effectors) flies sanely after days of work and reaches reference quality after weeks of flying and logs. A new effector type
   (canted nozzles, an unusual surface) means understanding the allocator and the capacity estimator: weeks to months.
 - **Size.** `FcsController.cs` is 11,400 lines on the F-22E, with 326 config bindings. Read `Tick` top to bottom once (README
@@ -3038,7 +3342,7 @@ it manageable:
   and its relatives, `Camber`, `AirfoilTable`), the native kernels and their load-time self-test twin no longer match your C#,
   and the self-test **still passes** (it compares the kernel to its twin, not to your new code). Turn the kernels off
   (`NativeTables=false`, `NativeSweep=false`) or keep the Rust in sync (`native/README.md`).
-- **One jet at a time.** A fix you make on your jet stays on your jet. Don't try to keep a port in step with all six
+- **One jet at a time.** A fix you make on your jet stays on your jet. Don't try to keep a port in step with all seven
   references; take the reference's newer release notes as a list of things to consider.
 - **The bench is required, not optional.** Without it, every test is a flight. Build the bench model (README §9.2), check it
   against one flight log before trusting it, and reuse `bench/an/` scripts rather than writing new ones.
@@ -3057,7 +3361,7 @@ it manageable:
 
 The FCS can only use the authority the airframe gives it. Most of the hard problems in §8 and §19 were partly airframe
 problems. This section collects what was learned about shaping a Nuclear Option airframe so a real FCS can fly it well.
-Every recommendation names the jet and the evidence. These are lessons from six airframes, not universal targets.
+Every recommendation names the jet and the evidence. These are lessons from seven airframes, not universal targets.
 
 ### 24.1 What the game models, and what it leaves out
 
@@ -3121,7 +3425,7 @@ such change out before post-stall (X2e: 45 → 60°), so spins and tail slides s
 - **Canards are ahead of the CG,** so their stall acts the other way in pitch from a tail's. Give them asymmetric travel and
   keep them in their attached-flow window at high AoA (Revoker, README §8.6).
 - **Canted fins make inverse roll at high AoA** with the rudder. Count them as sideslip effectors there (F-22E, README §8.2).
-- **Servo speed matters as much as travel.** All six run 100 °/s (Aryx's F-22E shipped 70). A reversal is often bounded by
+- **Servo speed matters as much as travel.** All seven run 100 °/s (Aryx's F-22E shipped 70). A reversal is often bounded by
   how long the rudders take to cross (0.5–0.7 s with a load, README §8.25), not by how far they go.
 
 ### 24.5 Yaw authority sets the high-AoA roll rate
@@ -3179,12 +3483,12 @@ Add vortex lift only with a pitch check across the whole AoA range (§24.2), and
 
 ### 24.10 Configurations not done yet
 
-The six reference jets are all conventional take-off jet fighters with fixed wing geometry. Configurations that **none of
+Six of the seven reference jets are conventional take-off jet fighters with fixed wing geometry; the Vortex adds **STOVL**
+(§8.27), for one lift system: the FS-20's lift fan, roll posts and three-bearing swivel nozzle. Configurations that **none of
 them covers** yet, and what each would need beyond this kit (expectations, not tested):
-- **VTOL / STOVL** (lift fans, swivelling lift nozzles, reaction-control puffers): below wing-borne speed there is almost no
-  aerodynamic authority, so attitude comes from thrust alone. It needs hover and transition laws (attitude and velocity
-  command instead of g and AoA), effector models for lift and puffer jets, and a blend through the transition. The
-  measured-state limits here assume forward flight.
+- **Other VTOL / STOVL systems** (lift jets, reaction-control puffers, tilt-rotors, a Harrier-style four-nozzle layout): the
+  Vortex's laws and allocator structure carry over, but each lift system needs its own game-side reader (the Vortex's
+  `SwivelLink` reads the FS-20's private types), effector models and a bench plant for it.
 - **Swing wings / variable geometry:** the sweep changes the neutral point, the CG (if the wing mass moves), the lift curve and
   every wing surface's moment arm in flight. The effector tables and the aero mirrors would have to be rebuilt for the sweep in
   force, and the sweep schedule itself becomes a law.
@@ -3195,7 +3499,7 @@ them covers** yet, and what each would need beyond this kit (expectations, not t
   the Revoker and Ternion, but not with a strongly unstable layout.
 - **Propeller aircraft:** torque, P-factor and slipstream over the tail are not modelled.
 - **Thrust reversers, independent 3D nozzles, or more than two engines:** the TVC effectors and the engine-out logic assume
-  what the six jets have.
+  what the seven jets have.
 
 If you port to one of these, expect new effector types, new failure modes and new laws, not just a port. Please share what you
 find: it is how this solution library grew.

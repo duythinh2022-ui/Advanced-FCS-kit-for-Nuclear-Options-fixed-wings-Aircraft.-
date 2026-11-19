@@ -1,0 +1,1 @@
+namespace Aryx_F22E_StrikeRaptor.FCS { internal static class Registry { public static bool IsF22(Aircraft a) => true; public static FcsController Current; public static FcsController Find(Aircraft a) => Current; } }

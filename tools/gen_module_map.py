@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate docs/MODULE_MAP.md: every source file of the six reference FCS plugins, what layer it belongs to, how big it is
+"""Generate docs/MODULE_MAP.md: every source file of the seven reference FCS plugins, what layer it belongs to, how big it is
 on each jet and how far the jets have diverged from each other (namespace differences ignored).
 
 usage: python3 tools/gen_module_map.py [kit_root]
@@ -8,12 +8,13 @@ import os, re, sys, difflib
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..")
 # in fork order: each jet was forked from the one before it (F-22E -> Ifrit -> Revoker -> Compass -> Ternion -> Su-30)
-JETS = [("F-22E", "reference/F22E-FCS-4.3.0/Aryx_F22E_StrikeRaptor.FCS", "Aryx_F22E_StrikeRaptor.FCS"),
-        ("Ifrit", "reference/Ifrit-FCS-1.3.0/Ifrit_KR67.FCS", "Ifrit_KR67.FCS"),
-        ("Revoker", "reference/Revoker-FCS-1.4.1/Revoker_FS12.FCS", "Revoker_FS12.FCS"),
-        ("Compass", "reference/Compass-FCS-0.5.0/Compass_TA30.FCS", "Compass_TA30.FCS"),
-        ("Ternion", "reference/Ternion-FCS-0.4.0/Ternion_FS3.FCS", "Ternion_FS3.FCS"),
-        ("Su-30", "reference/Su30-FCS-0.6.0/Su30_VXN.FCS", "Su30_VXN.FCS")]
+JETS = [("F-22E", "reference/F22E-FCS-4.5.1/Aryx_F22E_StrikeRaptor.FCS", "Aryx_F22E_StrikeRaptor.FCS"),
+        ("Ifrit", "reference/Ifrit-FCS-1.5.0/Ifrit_KR67.FCS", "Ifrit_KR67.FCS"),
+        ("Revoker", "reference/Revoker-FCS-1.5.0/Revoker_FS12.FCS", "Revoker_FS12.FCS"),
+        ("Compass", "reference/Compass-FCS-0.5.1/Compass_TA30.FCS", "Compass_TA30.FCS"),
+        ("Ternion", "reference/Ternion-FCS-0.4.2/Ternion_FS3.FCS", "Ternion_FS3.FCS"),
+        ("Su-30", "reference/Su30-FCS-0.6.5/Su30_VXN.FCS", "Su30_VXN.FCS"),
+        ("Vortex", "reference/Vortex-FCS-0.5.10/Vortex_FS20.FCS", "Vortex_FS20.FCS")]
 
 # layer, one-line role. Layers:
 #   LAW      control laws / allocation / estimation - the FCS itself
@@ -37,6 +38,16 @@ ROLE = {
     "RaptorFoil.cs": ("AERO", "Su-30: the F-22E's stab lift curve (Aryx's F22E_Wing remapped to a 25 deg peak) put on the Su-30's stabs (RaptorStabFoil)."),
     "StructureFix.cs": ("GLUE", "Ternion: re-homes a part whose transform parent is an engine but which is jointed to the airframe, so a destroyed engine no longer takes the tail with it."),
     "ThrustLine.cs": ("AERO", "Su-30: moves each nozzle's thrust force point to the CG's height (ThrustLineAtCg); the FCS's nozzle models use the same arm."),
+    "AsymShared.cs": ("LAW", "The asymmetric-load system shared by all seven jets since 17 Nov (FcsController is partial): sweep (AsymSweepPoint, coupled LP CplSolve, SwGather), cap (AsymStep, CplKnee, CplDemand, CapFilterStep), low-thrust authority cap, FuelTrimStep, DamageGateStep, AsymGate. Same text everywhere but the namespace (tools/asym_shared/checkshared.py); per-jet behaviour only through Plugin settings."),
+    "Stovl.cs": ("LAW", "Vortex: the F-35B-style STOVL laws - conversion on Flight Assist, translational-rate command in the hover, throttle as speed / ground-speed command with a zero-ground-speed detent, ship-relative hover, the lift-fan / roll-post / swivel-nozzle effector models fed to the same allocator."),
+    "StovlHooks.cs": ("GLUE", "Vortex: game-side hooks of the STOVL laws - takes the SwivelDuctSystem's swivel command and the lift system's pitch/roll/yaw inputs from the allocator, and the engine throttle from the STOVL laws, while the FCS owns the lift system."),
+    "SwivelLink.cs": ("GLUE", "Vortex: reflection reader/writer for the game's SwivelDuctSystem (bearings, thrusters, lift fan, doors) and, since 0.5.0, the lift-fan vane box's thrust-line turning."),
+    "VaneBox.cs": ("EXTRA", "Vortex 0.5.x: render-only vane box under the lift fan that shows the fan's thrust line turning (no collider, mass or aero)."),
+    "VaneBoxData.cs": ("EXTRA", "Vortex: generated meshes of the vane box (tools/vanebox/gen.py, export_cs.py); do not edit by hand."),
+    "ReleaseGuard.cs": ("SYSTEM", "Vortex: STOVL weapon-release guard - holds a release that would leave more lateral imbalance than the roll effectors can trim (AuthorityShare of the live roll moment); hold the trigger to override."),
+    "HudShipMatch.cs": ("EXTRA", "Vortex: shows the game's auto-hover 'H' icon while the STOVL laws hover on a ship's speed (flashing while blending)."),
+    "HudThrottle.cs": ("EXTRA", "Vortex: the throttle gauge reads what the STOVL lever commands (0 GS, +12 KT, HOLD SPD...) and marks the zero-ground-speed detent."),
+    "ThrottleDetent.cs": ("GLUE", "Vortex: hold detent at the STOVL zero-ground-speed throttle for keyboard/button throttles (as baanish's Detents mod)."),
     "CoupledCap.cs": ("LAW", "Coupled asymmetric-load check (Ternion 0.2.2, all six since 12 Nov): per sweep AoA a small LP over every effector's moment points gives the flight-path roll left each way with the load, pitch held and no sideslip acceleration; the AoA cap sits where the weaker side falls to AsymCoupledReserveMax of the roll range (FindTop = the lower edge of the top over-threshold stretch). Off by default on the F-22E."),
     "FcsNative.cs": ("GLUE", "Native (Rust) core wrapper (F-22E 4.0.0+, all six): DllImport of <Jet>_FcsCore (allocator solve, grid kernels, coupled-check LP), ABI check, load-time self-tests against C# twins, extraction of the embedded core to BepInEx/cache/<Lib>/<sha>/, C# fallback."),
     "PitchBump.cs": ("AERO", "Su-30 0.2.5: extra lift on the body sections ahead of the CG at high AoA (HighAoAPitchBump) against the pitch wall."),
@@ -94,13 +105,17 @@ def changed(a, b):
     return "identical" if n == 0 else str(n)
 
 
+# (parent, child) index pairs: the fork chain F-22E -> Ifrit -> Revoker -> Compass -> Ternion -> Su-30, and the Vortex cloned from the Revoker
+PAIRS = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (2, 6)]
+
+
 def main():
     files = sorted({f for _, rel, _ in JETS for f in os.listdir(os.path.join(ROOT, rel)) if f.endswith(".cs")})
     rows = []
     for f in files:
         src = [norm(os.path.join(ROOT, rel, f), ns) for _, rel, ns in JETS]
         lens = [str(len(s)) if s is not None else "—" for s in src]
-        diffs = [changed(src[k - 1], src[k]) for k in range(1, len(JETS))]
+        diffs = [changed(src[a], src[b]) for a, b in PAIRS]
         layer, role = ROLE.get(f, ("?", ""))
         rows.append((layer, f, lens, diffs, role))
     order = ["LAW", "MODEL", "AERO", "SYSTEM", "GLUE", "EXTRA", "?"]
@@ -117,11 +132,11 @@ def main():
     for layer, f, lens, diffs, role in rows:
         L.append(f"| {layer} | `{f}` | " + " | ".join(lens) + f" | {role} |")
     L += ["", "## How far each jet has moved from the one it was forked from", "",
-          "The jets were forked in a chain: F-22E → Ifrit → Revoker → Compass → Ternion → Su-30. Each column counts the changed lines",
+          "The jets were forked in a chain: F-22E → Ifrit → Revoker → Compass → Ternion → Su-30; the Vortex was cloned from the Revoker. Each column counts the changed lines",
           "between a jet and its parent, namespace normalised (`identical` = the same file). A port of your own starts from the jet",
           "whose column is smallest for the files you care about.", "",
-          "| Layer | File | " + " | ".join(f"{names[k-1]}→{names[k]}" for k in range(1, len(names))) + " |",
-          "|---|---|" + "---|" * (len(names) - 1)]
+          "| Layer | File | " + " | ".join(f"{names[a]}→{names[b]}" for a, b in PAIRS) + " |",
+          "|---|---|" + "---|" * len(PAIRS)]
     for layer, f, lens, diffs, role in rows:
         L.append(f"| {layer} | `{f}` | " + " | ".join(diffs) + " |")
     out = os.path.join(ROOT, "docs", "MODULE_MAP.md")

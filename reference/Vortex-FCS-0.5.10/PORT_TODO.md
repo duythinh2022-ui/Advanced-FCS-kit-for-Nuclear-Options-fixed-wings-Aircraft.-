@@ -1,0 +1,113 @@
+# Port checklist for FS-20 Vortex FCS
+
+Cloned from `reference/Revoker-FCS-1.4.2` by `tools/new_airframe.py`. Identity, aircraft match and bench wiring are done.
+Everything below is still the source jet's and must be reviewed for your aircraft. Work through it with README section 7
+(porting procedure), section 8 (solution library) and section 9 (models). Line numbers are as cloned.
+
+- [ ] **Aircraft match (done by this tool) - confirm it matches only your aircraft (prefab name / aircraftName).**
+  - `Vortex_FS20.FCS/Registry.cs:63` `public static bool IsF22(Aircraft a)`
+- [ ] **Setup completeness check: minimum surfaces / engines before the airframe setup counts as done.**
+  - `Vortex_FS20.FCS/Registry.cs:216` `bool flag = num2 >= 5 && num >= 1;`
+- [ ] **Airframe setup: performance-profile and actuator changes applied to the game aircraft. Remove what you do not want.**
+  - `Vortex_FS20.FCS/Registry.cs:154` `if (Plugin.TvcRange > 0f)`
+  - `Vortex_FS20.FCS/Registry.cs:156` `v.x = Plugin.TvcRange;`
+  - `Vortex_FS20.FCS/Registry.cs:176` `if (Mathf.Abs(Plugin.ThrustScale - 1f) > 0.0001f)`
+  - `Vortex_FS20.FCS/Registry.cs:178` `Acc.TF_staticThrust(item) *= Plugin.ThrustScale;`
+  - `Vortex_FS20.FCS/Registry.cs:184` `ScaleAfterburners(array[i], Plugin.ThrustScale);`
+  - `Vortex_FS20.FCS/Registry.cs:191` `if (item2 is AeroPart aeroPart && Mathf.Abs(Plugin.DragScale - 1f) > 0.0001f && dragScaled.Add(aeroPart.GetInstanceID()))`
+  - `Vortex_FS20.FCS/Registry.cs:193` `Acc.AP_dragArea(aeroPart) *= Plugin.DragScale;`
+  - `Vortex_FS20.FCS/Registry.cs:202` `if (Plugin.SurfaceServoSpeed > 0f)`
+  - ... 6 more in `Vortex_FS20.FCS/Registry.cs`
+- [ ] **Surface roles from GameObject names / ranges. Map YOUR surface names to Stabilator / Flaperon / Aileron / Rudder.**
+  - `Vortex_FS20.FCS/FcsController.cs:3012` `private static SurfaceKind Classify(ControlSurface cs)`
+- [ ] **Minimum surface count in the constructor.**
+  - `Vortex_FS20.FCS/FcsController.cs:2774` `throw new InvalidOperationException("Vortex FCS: expected 5 control surfaces, found " + surfaces.Count);`
+- [ ] **Effector list: surfaces, pairing (_L/_R), TVC, splits, differential/yaw TVC, hinged surfaces.**
+  - `Vortex_FS20.FCS/FcsController.cs:2758` `public FcsController(Aircraft aircraft)`
+- [ ] **Part-name prefix stripping for the camber host lookup.**
+  - `Vortex_FS20.FCS/FcsController.cs:2780` `partsByName[apH.gameObject.name.Replace("Aryx_KingRaptor_", "")] = apH;`
+  - `Vortex_FS20.FCS/FcsController.cs:4794` `byName[ap.gameObject.name.Replace("Aryx_KingRaptor_", "")] = ap;`
+- [ ] **Camber coupling: which fixed part hosts each surface, by name, and its K. Rewrite for your part names or disable.**
+  - `Vortex_FS20.FCS/Camber.cs:14` `public static string HostOf(string surfaceName)`
+  - `Vortex_FS20.FCS/Camber.cs:53` `public static float KForName(string surfaceName)`
+- [ ] **Staggered stall families by surface name. Rewrite or disable (Enabled) for your aircraft.**
+  - `Vortex_FS20.FCS/StallStagger.cs:37` `public static Fam FamilyOf(string name)`
+  - `Vortex_FS20.FCS/StallStagger.cs:39` `Fam f = SurfaceFamilyOf(name);`
+  - `Vortex_FS20.FCS/StallStagger.cs:40` `if (f != Fam.None)`
+  - `Vortex_FS20.FCS/StallStagger.cs:42` `return Plugin.StallStagger ? f : Fam.None;`
+  - `Vortex_FS20.FCS/StallStagger.cs:44` `return Plugin.BodyLiftShaping ? BodyLift.FamilyOf(name) : Fam.None;`
+  - `Vortex_FS20.FCS/StallStagger.cs:47` `public static Fam SurfaceFamilyOf(string name)`
+  - `Vortex_FS20.FCS/StallStagger.cs:51` `return Fam.None;`
+  - `Vortex_FS20.FCS/StallStagger.cs:57` `return Fam.Outer;`
+  - ... 12 more in `Vortex_FS20.FCS/StallStagger.cs`
+- [ ] **Envelope defaults: set them for your airframe.**
+  - `Vortex_FS20.FCS/Plugin.cs:1620` `cAoAPos = dev.Bind("2. Envelope", "AoALimitPositive", 70f, "AoA limit (deg) in AoA/G command and gear-down rate command. Revoker 0.2.0: 70 (`
+  - `Vortex_FS20.FCS/Plugin.cs:1621` `cAoANeg = dev.Bind("2. Envelope", "AoALimitNegative", 55f, "Negative AoA limit magnitude (deg), with the nozzle covering pitch. Revoker 0.2.`
+  - `Vortex_FS20.FCS/Plugin.cs:1692` `cGPos = dev.Bind("2. Envelope", "GLimitPositive", 9.5f, "Positive load limit (g), normal law.");`
+  - `Vortex_FS20.FCS/Plugin.cs:1696` `cMaxPitch = dev.Bind("2. Envelope", "MaxPitchRate", 60f, "Pitch-rate budget ceiling (deg/s). Revoker 1.4.1: default 48 -> 60 (the F-22E's an`
+  - `Vortex_FS20.FCS/Plugin.cs:1699` `cMaxYaw = dev.Bind("3. Lateral-directional", "MaxYawRate", 90f, "Body yaw-rate limit (deg/s). Revoker 0.2.2: 90 (was 75); bench, 70 deg load`
+- [ ] **Lateral-governor defaults (player file).**
+  - `Vortex_FS20.FCS/Plugin.cs:1743` `cPullRollTrade = cfg.Bind("6. Lateral governor", "PullRollTrade", 0.7f, "2.2.8 (2.2.23: default 0 -> 0.7; 2.2.26: 1; 2.2.27: back to 0.7): i`
+  - `Vortex_FS20.FCS/Plugin.cs:1744` `cRollStopSlip = cfg.Bind("6. Lateral governor", "RollStopSideslip", 6f, "Vortex FCS 0.7.0: default 8 -> 6 (Tom, 5 Nov 01:10: roll reversals `
+  - `Vortex_FS20.FCS/Plugin.cs:1748` `cRollPaceRateBlend = cfg.Bind("6. Lateral governor", "RollPaceRateBlend", 0.65f, new ConfigDescription("Vortex FCS 0.8.1: default 0.4 -> 0.6`
+  - `Vortex_FS20.FCS/Plugin.cs:1750` `cPushSlip = cfg.Bind("6. Lateral governor", "PushoverSideslip", 8f, "Revoker 0.6.0 (the F-22E 3.0.0 push governor and push plan): 8, set exp`
+  - `Vortex_FS20.FCS/Plugin.cs:2518` `private static readonly string[] GovMovedKeys = new string[] { "PullRollTrade", "RollStopSideslip", "RollGovernorPitch", "RollPaceRateSlip",`
+- [ ] **Estimator effector groups and per-group gains - every lateral effector must be in a group.**
+  - `Vortex_FS20.FCS/CapacityEstimator.cs:105` `internal static int Group(Effector e)`
+- [ ] **Engine hooks: how nozzle commands reach the game's engine (Turbojet vs Turbofan).**
+  - `Vortex_FS20.FCS/Hooks.cs:505` `public static float TvcPitch(ControlInputs ci)`
+  - `Vortex_FS20.FCS/Hooks.cs:519` `public static float TvcRoll(ControlInputs ci)`
+  - `Vortex_FS20.FCS/Hooks.cs:552` `public static float TvcYaw(ControlInputs ci)`
+  - `Vortex_FS20.FCS/Hooks.cs:568` `public static float TvcPitchChain(ControlInputs ci, float other)`
+  - `Vortex_FS20.FCS/Hooks.cs:572` `return TvcPitch(ci);`
+  - `Vortex_FS20.FCS/Hooks.cs:577` `public static float TvcRollChain(ControlInputs ci, float other)`
+  - `Vortex_FS20.FCS/Hooks.cs:581` `return TvcRoll(ci);`
+  - `Vortex_FS20.FCS/Hooks.cs:586` `public static float TvcYawChain(ControlInputs ci, float other)`
+  - ... 14 more in `Vortex_FS20.FCS/Hooks.cs`
+- [ ] **Gameplay extras (performance profile, countermeasures). Optional.**
+  - `Vortex_FS20.FCS/Plugin.cs:1561` `cProfile = cfg.Bind("1. General", "PerformanceProfile", PerformanceProfile.Stock, "Stock (default) = the game's FS-12 Revoker thrust, parasi`
+  - `Vortex_FS20.FCS/Plugin.cs:1594` `cFlareScaleStock = cfg.Bind("3. Countermeasures - Stock profile", "FlareCountScale", 1f, "Flare capacity multiplier (the load at spawn and w`
+  - `Vortex_FS20.FCS/Plugin.cs:1595` `cGunAmmoStock = cfg.Bind("3. Countermeasures - Stock profile", "GunAmmoScale", 1f, "Gun ammunition multiplier: magazine capacity, so the loa`
+  - `Vortex_FS20.FCS/Plugin.cs:1598` `cFlareScaleBuffed = cfg.Bind("4. Countermeasures - Buffed profile", "FlareCountScale", 10f, "Flare capacity multiplier (the load at spawn an`
+  - `Vortex_FS20.FCS/Plugin.cs:1599` `cGunAmmoBuffed = cfg.Bind("4. Countermeasures - Buffed profile", "GunAmmoScale", 2f, "Gun ammunition multiplier: magazine capacity, so the l`
+- [ ] **One-time config migrations (DevRevision / AirframeRevision ...): they rewrite the source jet's old defaults in existing config files. Reset or delete them for a new jet.**
+  - `Vortex_FS20.FCS/Plugin.cs:1630` `cIfritRev = dev.Bind("2. Envelope", "IfritConfigRevision", 8, "Internal: config revision (inherited from the Ifrit FCS). Leave it alone.");`
+  - `Vortex_FS20.FCS/Plugin.cs:1745` `cGovRev = cfg.Bind("6. Lateral governor", "GovernorRevision", 0, "Internal: the lateral-governor default revision this file was last updated`
+  - `Vortex_FS20.FCS/Plugin.cs:1880` `cAirframeRev = dev.Bind("5. Airframe", "AirframeRevision", 13, "Internal: airframe-default revision (inherited from the Ifrit FCS). Leave it`
+  - `Vortex_FS20.FCS/Plugin.cs:1959` `// true). A dev file written by 0.1.0 has no RevokerConfigRevision line; values set by hand to anything else stay.`
+  - `Vortex_FS20.FCS/Plugin.cs:1960` `bool revOld = devUnlocked && !devFresh && !FileHasKey(dev.ConfigFilePath, "RevokerConfigRevision");`
+  - `Vortex_FS20.FCS/Plugin.cs:1961` `cRevokerRev = dev.Bind("2. Envelope", "RevokerConfigRevision", 16, "Internal: the Revoker config revision this file was last updated to. Lea`
+- [ ] **Fuel hook / buffed fuel burn: keep the two-prefix form (scale at Priority.First, draw at Priority.Last) - see README failure modes.**
+- [ ] **Bench airframe flags keyed to the source jet's root name.**
+  - `bench/sim/Airframe.cs:107` `tr.localRotation = new Quaternion(lr[0], lr[1], lr[2], lr[3]);`
+  - `bench/sim/Airframe.cs:116` `ifrit = J.TryGetProperty("stockFbw", out stockFbwJ); hasStockFbw = ifrit;`
+  - `bench/sim/Airframe.cs:117` `revoker = ifrit && root.gameObject.name == "Fighter1";`
+  - `bench/sim/Airframe.cs:120` `root.localPosition = Vector3.zero; root.localRotation = Quaternion.identity; root.localScale = Vector3.one;`
+  - `bench/sim/Airframe.cs:392` `var boxes = new List<(Vector3 c, Quaternion r, Vector3 s)>();`
+  - `bench/sim/Airframe.cs:393` `var hulls = new List<(Vector3 c, Quaternion r, double V, double[,] I)>();`
+  - `bench/sim/Airframe.cs:517` `public static double[,] Rot(Quaternion q)`
+  - `bench/sim/Airframe.cs:549` `static Quaternion QuatFromMatrix(double[,] m)`
+  - ... 1 more in `bench/sim/Airframe.cs`
+- [ ] **Bench airframe JSON path: point it at YOUR extracted airframe (README section 9).**
+  - `bench.sh:10` `R=$(cd "$(dirname "$0")"; pwd); B=$R/bench; export BENCH_DIR=$B BENCH_DATA=${BENCH_DATA:-$B/extract/rev_airframe.json} BENCH_DMG=${BENCH_DMG`
+- [ ] **Native core: library name (renamed by this tool) and ABI number. Any change to the allocator, the grid kernels or the coupled-check LP must be made in native/fcs_core/src as well, expression for expression, with an ABI bump (README section 2.18).**
+  - `Vortex_FS20.FCS/FcsNative.cs:38` `public const string Lib = "Vortex_FcsCore";`
+  - `Vortex_FS20.FCS/FcsNative.cs:41` `public const int Abi = 2013000;`
+- [ ] **Coupled asymmetric-load check: the reserve share (AsymCoupledReserveMax) is per jet; check the demand curve's shape before choosing the edge rule (README section 8).**
+  - `Vortex_FS20.FCS/CoupledCap.cs:6` `// Revoker 1.3.0: the solve also in the native core (Ternion 0.3.0's NativeCoupledCap), plus the one-side Reserve (Su-30 0.5.0).`
+  - `Vortex_FS20.FCS/CoupledCap.cs:36` `public readonly double[] solP = new double[MaxCol + 1], solN = new double[MaxCol + 1];   // debug: last Reserve's optimal mixes`
+  - `Vortex_FS20.FCS/CoupledCap.cs:108` `public bool Reserve(float sinA, float cosA, float bR, float bQ, float bY, int sgnA, out float rp, out float rn, int side = 0)`
+  - `Vortex_FS20.FCS/CoupledCap.cs:114` `bool okN = ReserveNative(sinA, cosA, bR, bQ, bY, sgnA, out float rpN, out float rnN, out bool fell, side);`
+  - `Vortex_FS20.FCS/CoupledCap.cs:123` `bool okC = ReserveCs(sinA, cosA, bR, bQ, bY, sgnA, out rp, out rn, side);`
+  - `Vortex_FS20.FCS/CoupledCap.cs:128` `return ReserveCs(sinA, cosA, bR, bQ, bY, sgnA, out rp, out rn, side);`
+  - `Vortex_FS20.FCS/CoupledCap.cs:179` `internal bool ReserveNative(float sinA, float cosA, float bR, float bQ, float bY, int sgnA, out float rp, out float rn, out bool fell, int s`
+  - `Vortex_FS20.FCS/CoupledCap.cs:199` `internal bool ReserveCs(float sinA, float cosA, float bR, float bQ, float bY, int sgnA, out float rp, out float rn, int side = 0)`
+- [ ] **Reversed-flow (flying backwards) roll axis: |cos AoA| mirror. Keep.**
+  - `Vortex_FS20.FCS/FcsController.cs:8256` `estJob.Kick(Plugin.EstimatorThreaded, effs, alloc, vector7, IaInv, zero4, num, unmetRaw, LatAxisAlpha(alpha), Mathf.Clamp01(rudderAuth) * Ma`
+  - `Vortex_FS20.FCS/FcsController.cs:11230` `// 1.4.0 (ReversedFlowNoseAxis): the AoA whose velocity-vector axis is the pilot's lateral axis - |AoA| past 90 mirrored to`
+  - `Vortex_FS20.FCS/FcsController.cs:11232` `internal static float LatAxisAlpha(float a)`
+  - `Vortex_FS20.FCS/FcsController.cs:11356` `// 1.4.0 (ReversedFlowNoseAxis, F-22E 4.3.0's law; Tom 12 Nov: "remember this rule from now on for velocity vector roll when`
+  - `Vortex_FS20.FCS/FcsController.cs:13086` `// 1.4.0 (ReversedFlowNoseAxis): flying backwards the pilot's axis is not the flight path, so turning the nose builds sideslip;`
+- [ ] **Ground steering with the main brakes: read YOUR gear's braking, differentialBrakeFactor and track (README section 8).**
+  - `Vortex_FS20.FCS/Hooks.cs:221` `// 1.3.1: what GearPrefix swapped on this leg's (shared) ControlInputs, for GearPostfix to put back`
+  - `Vortex_FS20.FCS/Hooks.cs:233` `public static void GearPrefix(LandingGear __instance, out GearSwap __state)`

@@ -2,7 +2,7 @@
 """Start an FCS for a new aircraft by cloning one of the reference trees under a new identity.
 
 usage:
-  python3 tools/new_airframe.py --from f22e|ifrit|revoker|compass|ternion|su30 --out <dir> --ns <Namespace.FCS> \
+  python3 tools/new_airframe.py --from f22e|ifrit|revoker|compass|ternion|su30|vortex --out <dir> --ns <Namespace.FCS> \
       --title "<display name>" --short "<log name>" --file-prefix <CsvPrefix> [--prefab <GameObjectNamePrefix>] \
       --match "<name part>" [--match ...] [--harmony <harmony id>] [--version 0.1.0]
 
@@ -31,20 +31,23 @@ KIT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 BENCH_NS = "Aryx_F22E_StrikeRaptor.FCS"   # every bench compiles the synced FCS copy in this namespace (its stubs live there)
 
 SRC = {
-    # fork order: f22e -> ifrit -> revoker -> compass -> ternion -> su30 (each forked from the one before it)
+    # fork order: f22e -> ifrit -> revoker -> compass -> ternion -> su30 (each forked from the one before it);
+    # vortex was cloned from the revoker (STOVL: lift fan, roll posts, 3-bearing swivel nozzle)
     # lib = the native (Rust) core's library name: the C# DllImport name, the embedded resource and native/prebuilt/<lib>.dll
-    "f22e": dict(dir="reference/F22E-FCS-4.3.0", ns="Aryx_F22E_StrikeRaptor.FCS", title="F-22E Strike Raptor FCS", short="F-22E FCS",
+    "f22e": dict(dir="reference/F22E-FCS-4.5.1", ns="Aryx_F22E_StrikeRaptor.FCS", title="F-22E Strike Raptor FCS", short="F-22E FCS",
                  harmony="com.aryx.strikeraptor.fcs", csv="F22E_FCS_", sync="bench/sync.sh", lib="F22E_FcsCore"),
-    "ifrit": dict(dir="reference/Ifrit-FCS-1.3.0", ns="Ifrit_KR67.FCS", title="KR-67 Ifrit FCS", short="Ifrit FCS",
+    "ifrit": dict(dir="reference/Ifrit-FCS-1.5.0", ns="Ifrit_KR67.FCS", title="KR-67 Ifrit FCS", short="Ifrit FCS",
                   harmony="tom.ifrit_kr67.fcs", csv="Ifrit_FCS_", sync="bench/isync.sh", lib="Ifrit_FcsCore"),
-    "revoker": dict(dir="reference/Revoker-FCS-1.4.1", ns="Revoker_FS12.FCS", title="FS-12 Revoker FCS", short="Revoker FCS",
+    "revoker": dict(dir="reference/Revoker-FCS-1.5.0", ns="Revoker_FS12.FCS", title="FS-12 Revoker FCS", short="Revoker FCS",
                     harmony="tom.revoker_fs12.fcs", csv="Revoker_FCS_", sync="bench/rsync.sh", lib="Revoker_FcsCore"),
-    "compass": dict(dir="reference/Compass-FCS-0.5.0", ns="Compass_TA30.FCS", title="T/A-30 Compass FCS", short="Compass FCS",
+    "compass": dict(dir="reference/Compass-FCS-0.5.1", ns="Compass_TA30.FCS", title="T/A-30 Compass FCS", short="Compass FCS",
                     harmony="tom.compass_ta30.fcs", csv="Compass_FCS_", sync="bench/rsync.sh", lib="Compass_FcsCore"),
-    "ternion": dict(dir="reference/Ternion-FCS-0.4.0", ns="Ternion_FS3.FCS", title="FS-3 Ternion FCS", short="Ternion FCS",
+    "ternion": dict(dir="reference/Ternion-FCS-0.4.2", ns="Ternion_FS3.FCS", title="FS-3 Ternion FCS", short="Ternion FCS",
                     harmony="tom.ternion_fs3.fcs", csv="Ternion_FCS_", sync="bench/rsync.sh", lib="Ternion_FcsCore"),
-    "su30": dict(dir="reference/Su30-FCS-0.6.0", ns="Su30_VXN.FCS", title="Su-30VXN FCS", short="Su-30 FCS",
+    "su30": dict(dir="reference/Su30-FCS-0.6.5", ns="Su30_VXN.FCS", title="Su-30VXN FCS", short="Su-30 FCS",
                  harmony="tom.su30_vxn.fcs", csv="Su30_FCS_", sync="bench/rsync.sh", lib="Su30_FcsCore"),
+    "vortex": dict(dir="reference/Vortex-FCS-0.5.10", ns="Vortex_FS20.FCS", title="FS-20 Vortex FCS", short="Vortex FCS",
+                   harmony="tom.vortex_fs20.fcs", csv="Vortex_FCS_", sync="bench/rsync.sh", lib="Vortex_FcsCore"),
 }
 
 SKIP_DIRS = {"bin", "obj", "out", "fcs", "release-notes", "__pycache__", "target", "studies"}
@@ -73,7 +76,7 @@ TODO = [
     ("{P}/Strake.cs", r"wingroot1|Strake", "Compass lineage: strake / LERX vortex-lift curve keyed by part name. Rewrite or disable."),
     ("{P}/RaptorFoil.cs", r"RaptorStabFoil", "Su-30 lineage: the F-22E stab curve put on the stabs. Keep only if you want it."),
     ("{P}/Registry.cs", r"FuelConsumptionScale|UseFuel", "Fuel hook / buffed fuel burn: keep the two-prefix form (scale at Priority.First, draw at Priority.Last) - see README failure modes."),
-    ("bench/sim/Airframe.cs", r"gameObject\.name ==|ifrit =|revoker =|su30|ternion|compass", "Bench airframe flags keyed to the source jet's root name."),
+    ("bench/sim/Airframe.cs", r"gameObject\.name ==|ifrit =|revoker =|su30|ternion|compass|vortex", "Bench airframe flags keyed to the source jet's root name."),
     ("bench.sh", r"BENCH_DATA", "Bench airframe JSON path: point it at YOUR extracted airframe (README section 9)."),
     ("{P}/FcsNative.cs", r"public const string Lib|public const int Abi|ABI", "Native core: library name (renamed by this tool) and ABI number. Any change to the allocator, the grid kernels or the coupled-check LP must be made in native/fcs_core/src as well, expression for expression, with an ABI bump (README section 2.18)."),
     ("{P}/CoupledCap.cs", r"Reserve|FindTop|CplBetaDesign", "Coupled asymmetric-load check: the reserve share (AsymCoupledReserveMax) is per jet; check the demand curve's shape before choosing the edge rule (README section 8)."),
@@ -130,7 +133,8 @@ def main():
     vrx = (r'public const string Version = "[^"]*";', f'public const string Version = "{a.version}";')
     pairs = [(S["harmony"], harmony), (S["title"], a.title), (S["csv"], a.file_prefix + "_FCS_"), (S["ns"], a.ns), (S["short"], a.short)]
     n = 0
-    for root in (P, os.path.join(dst, "DevUnlock"), os.path.join(dst, "Properties")):
+    # tools/smoke: the Vortex's offline smoke test loads types by namespace
+    for root in (P, os.path.join(dst, "DevUnlock"), os.path.join(dst, "Properties"), os.path.join(dst, "tools", "smoke")):
         if not os.path.isdir(root):
             continue
         for f in os.listdir(root):

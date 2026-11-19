@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate docs/CONFIG_REFERENCE.md: every BepInEx config key of the six reference FCS plugins, side by side.
+"""Generate docs/CONFIG_REFERENCE.md: every BepInEx config key of the seven reference FCS plugins, side by side.
 
 usage: python3 tools/gen_config_reference.py [kit_root]
 
@@ -10,12 +10,13 @@ each jet and the description text (from the first jet that has the key). Re-run 
 import os, re, sys, glob
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "..")
-JETS = [("F-22E", "reference/F22E-FCS-4.3.0/Aryx_F22E_StrikeRaptor.FCS/Plugin.cs"),
-        ("Ifrit", "reference/Ifrit-FCS-1.3.0/Ifrit_KR67.FCS/Plugin.cs"),
-        ("Revoker", "reference/Revoker-FCS-1.4.1/Revoker_FS12.FCS/Plugin.cs"),
-        ("Compass", "reference/Compass-FCS-0.5.0/Compass_TA30.FCS/Plugin.cs"),
-        ("Ternion", "reference/Ternion-FCS-0.4.0/Ternion_FS3.FCS/Plugin.cs"),
-        ("Su-30", "reference/Su30-FCS-0.6.0/Su30_VXN.FCS/Plugin.cs")]
+JETS = [("F-22E", "reference/F22E-FCS-4.5.1/Aryx_F22E_StrikeRaptor.FCS/Plugin.cs"),
+        ("Ifrit", "reference/Ifrit-FCS-1.5.0/Ifrit_KR67.FCS/Plugin.cs"),
+        ("Revoker", "reference/Revoker-FCS-1.5.0/Revoker_FS12.FCS/Plugin.cs"),
+        ("Compass", "reference/Compass-FCS-0.5.1/Compass_TA30.FCS/Plugin.cs"),
+        ("Ternion", "reference/Ternion-FCS-0.4.2/Ternion_FS3.FCS/Plugin.cs"),
+        ("Su-30", "reference/Su30-FCS-0.6.5/Su30_VXN.FCS/Plugin.cs"),
+        ("Vortex", "reference/Vortex-FCS-0.5.10/Vortex_FS20.FCS/Plugin.cs")]
 
 
 def split_args(s, i):
@@ -109,7 +110,7 @@ def main():
             L.append(f"| `{k[1]}` | {d['file'].replace('cfg', 'player')} | " + " | ".join(vals) + f" | {desc} |")
         L.append("")
     n = len(order)
-    L.insert(4, f"{n} keys in {len(secs)} sections across the six jets.\n")
+    L.insert(4, f"{n} keys in {len(secs)} sections across the seven jets.\n")
     out = os.path.join(ROOT, "docs", "CONFIG_REFERENCE.md")
     open(out, "w").write("\n".join(L))
     print(f"wrote {out}: {n} keys, {len(secs)} sections")

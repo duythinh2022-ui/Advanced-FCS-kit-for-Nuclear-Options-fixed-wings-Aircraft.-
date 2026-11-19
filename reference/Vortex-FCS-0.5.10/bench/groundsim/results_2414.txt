@@ -1,0 +1,73 @@
+# 2.4.14 / 0.5.4 INDI nose-wheel bench (gsim2 = IL-exact tyre). Release braking:
+== ifrit: release after a 3 s full / half pedal turn. stop = |r| < 1 deg/s after release; heading overshoot after stop; heading drift 4 s later
+  V  4 m/s (  8 kt) ped 1.0 | stop s: 2.4.13 0.73 / INDI 0.73 | heading after release deg:    7.3 /    7.3 | swing-back deg/s: 0.04 / 0.11
+  V  4 m/s (  8 kt) ped 0.5 | stop s: 2.4.13 0.38 / INDI 0.38 | heading after release deg:    1.9 /    1.9 | swing-back deg/s: 0.04 / 0.01
+  V  7 m/s ( 14 kt) ped 1.0 | stop s: 2.4.13 0.88 / INDI 0.87 | heading after release deg:   11.3 /   11.3 | swing-back deg/s: 0.05 / 0.11
+  V  7 m/s ( 14 kt) ped 0.5 | stop s: 2.4.13 0.50 / INDI 0.48 | heading after release deg:    3.3 /    3.3 | swing-back deg/s: 0.04 / 0.10
+  V 10 m/s ( 19 kt) ped 1.0 | stop s: 2.4.13 0.93 / INDI 0.90 | heading after release deg:   13.5 /   13.4 | swing-back deg/s: 0.05 / 0.15
+  V 10 m/s ( 19 kt) ped 0.5 | stop s: 2.4.13 0.55 / INDI 0.52 | heading after release deg:    4.2 /    4.1 | swing-back deg/s: 0.06 / 0.15
+  V 15 m/s ( 29 kt) ped 1.0 | stop s: 2.4.13 0.78 / INDI 0.75 | heading after release deg:   10.3 /   10.3 | swing-back deg/s: 0.07 / 0.16
+  V 15 m/s ( 29 kt) ped 0.5 | stop s: 2.4.13 0.57 / INDI 0.53 | heading after release deg:    4.9 /    4.8 | swing-back deg/s: 0.07 / 0.17
+  V 20 m/s ( 39 kt) ped 1.0 | stop s: 2.4.13 0.60 / INDI 0.57 | heading after release deg:    6.3 /    6.2 | swing-back deg/s: 0.07 / 0.13
+  V 20 m/s ( 39 kt) ped 0.5 | stop s: 2.4.13 0.55 / INDI 0.52 | heading after release deg:    5.0 /    5.0 | swing-back deg/s: 0.08 / 0.18
+  V 25 m/s ( 49 kt) ped 1.0 | stop s: 2.4.13 0.48 / INDI 0.47 | heading after release deg:    4.1 /    4.1 | swing-back deg/s: 0.08 / 0.08
+  V 25 m/s ( 49 kt) ped 0.5 | stop s: 2.4.13 0.47 / INDI 0.45 | heading after release deg:    3.7 /    3.7 | swing-back deg/s: 0.08 / 0.10
+== f22e: release after a 3 s full / half pedal turn. stop = |r| < 1 deg/s after release; heading overshoot after stop; heading drift 4 s later
+  V  4 m/s (  8 kt) ped 1.0 | stop s: 2.4.13 1.33 / INDI 1.32 | heading after release deg:   24.7 /   25.1 | swing-back deg/s: 0.04 / 0.03
+  V  4 m/s (  8 kt) ped 0.5 | stop s: 2.4.13 0.62 / INDI 0.58 | heading after release deg:    5.0 /    4.9 | swing-back deg/s: 0.03 / 0.09
+  V  7 m/s ( 14 kt) ped 1.0 | stop s: 2.4.13 1.55 / INDI 1.42 | heading after release deg:   32.4 /   32.2 | swing-back deg/s: 0.05 / 0.15
+  V  7 m/s ( 14 kt) ped 0.5 | stop s: 2.4.13 1.02 / INDI 0.88 | heading after release deg:   12.6 /   12.3 | swing-back deg/s: 0.04 / 0.15
+  V 10 m/s ( 19 kt) ped 1.0 | stop s: 2.4.13 1.17 / INDI 1.17 | heading after release deg:   23.6 /   23.6 | swing-back deg/s: 0.05 / 0.21
+  V 10 m/s ( 19 kt) ped 0.5 | stop s: 2.4.13 0.65 / INDI 0.65 | heading after release deg:    7.0 /    7.0 | swing-back deg/s: 0.06 / 0.20
+  V 15 m/s ( 29 kt) ped 1.0 | stop s: 2.4.13 0.88 / INDI 0.90 | heading after release deg:   14.8 /   14.8 | swing-back deg/s: 0.07 / 0.18
+  V 15 m/s ( 29 kt) ped 0.5 | stop s: 2.4.13 0.63 / INDI 0.65 | heading after release deg:    7.3 /    7.3 | swing-back deg/s: 0.07 / 0.15
+  V 20 m/s ( 39 kt) ped 1.0 | stop s: 2.4.13 0.68 / INDI 0.68 | heading after release deg:    9.3 /    9.3 | swing-back deg/s: 0.06 / 0.16
+  V 20 m/s ( 39 kt) ped 0.5 | stop s: 2.4.13 0.60 / INDI 0.62 | heading after release deg:    7.1 /    7.1 | swing-back deg/s: 0.07 / 0.12
+  V 25 m/s ( 49 kt) ped 1.0 | stop s: 2.4.13 0.53 / INDI 0.55 | heading after release deg:    6.1 /    6.2 | swing-back deg/s: 0.07 / 0.13
+  V 25 m/s ( 49 kt) ped 0.5 | stop s: 2.4.13 0.53 / INDI 0.55 | heading after release deg:    6.1 /    6.2 | swing-back deg/s: 0.07 / 0.13
+
+# gain / filter / slip-margin sweep
+== ifrit
+ K  5 tau 0.04 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.22(0.0) +0.22(0.0) +0.18(0.0) +0.18(0.0) +0.23(0.0) +0.23(0.0) +0.27(0.0) +0.25(0.0)
+ K 10 tau 0.04 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.03(0.0) +0.03(0.0) +0.00(0.0) +0.00(0.0) +0.02(0.0) +0.02(0.0) +0.03(0.1) +0.03(0.1)
+ K 15 tau 0.04 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.00(0.1) +0.00(0.0) -0.03(0.1) -0.03(0.1) -0.03(0.1) -0.03(0.2) -0.02(0.1) -0.02(0.1)
+ K 20 tau 0.04 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.00(0.3) -0.02(0.3) -0.03(0.4) -0.03(0.3) -0.03(0.2) -0.05(0.3) -0.03(0.2) -0.03(0.2)
+ K 15 tau 0.02 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.00(0.1) +0.00(0.0) -0.03(0.2) -0.03(0.2) -0.03(0.2) -0.03(0.3) -0.03(0.2) -0.03(0.2)
+ K 15 tau 0.04 satM 2.0: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.00(0.1) +0.00(0.0) -0.03(0.1) -0.03(0.1) -0.03(0.1) -0.03(0.2) -0.02(0.1) -0.02(0.1)
+ K 15 tau 0.04 satM 3.0: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.00(0.1) +0.00(0.0) -0.03(0.1) -0.03(0.1) -0.03(0.1) -0.03(0.2) -0.02(0.1) -0.02(0.1)
+== f22e
+ K  5 tau 0.04 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.20(0.0) +0.18(0.0) +0.22(0.0) +0.23(0.0) +0.27(0.0) +0.27(0.0) +0.30(0.0) +0.30(0.0)
+ K 10 tau 0.04 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: +0.02(0.0) +0.00(0.0) +0.03(0.0) +0.05(0.0) +0.05(0.1) +0.05(0.1) +0.07(0.1) +0.07(0.1)
+ K 15 tau 0.04 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: -0.02(0.0) -0.03(0.1) +0.00(0.2) +0.00(0.2) +0.00(0.2) +0.02(0.1) +0.02(0.1) +0.02(0.1)
+ K 20 tau 0.04 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: -0.03(0.3) -0.05(0.3) +0.00(0.4) +0.00(0.3) +0.00(0.3) +0.00(0.2) +0.00(0.2) +0.00(0.2)
+ K 15 tau 0.02 satM 1.2: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: -0.02(0.0) -0.03(0.1) +0.00(0.2) +0.00(0.2) +0.00(0.2) +0.02(0.2) +0.02(0.2) +0.02(0.2)
+ K 15 tau 0.04 satM 2.0: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: -0.03(0.0) -0.03(0.1) +0.00(0.2) +0.00(0.2) +0.00(0.2) +0.02(0.1) +0.02(0.1) +0.02(0.1)
+ K 15 tau 0.04 satM 3.0: INDI minus 2.4.13 stop time s (swing-back deg/s), V4 f/h V10 f/h V20 f/h V25 f/h: -0.05(0.0) -0.03(0.1) +0.00(0.2) +0.00(0.2) +0.00(0.2) +0.02(0.1) +0.02(0.1) +0.02(0.1)
+
+# line hold under yaw gusts, with plant/model mismatch
+== ifrit | hold: 6 deg/s yaw kick at 2 s + yaw gusts 3 deg/s^2 rms; heading peak after kick / heading rms 4-12 s / r rms
+  V 10 nominal                                          | kick peak deg PI 0.54 INDI 0.54 | psi rms PI 0.09 INDI 0.02 | r rms PI 0.15 INDI 0.04
+  V 10 plant heavy+stores (Iz +32%), INDI told nominal  | kick peak deg PI 0.75 INDI 0.74 | psi rms PI 0.12 INDI 0.03 | r rms PI 0.19 INDI 0.06
+  V 10 plant CG aft -4%, INDI told nominal              | kick peak deg PI 0.66 INDI 0.66 | psi rms PI 0.11 INDI 0.03 | r rms PI 0.17 INDI 0.05
+  V 25 nominal                                          | kick peak deg PI 0.60 INDI 0.58 | psi rms PI 0.14 INDI 0.03 | r rms PI 0.24 INDI 0.05
+  V 25 plant heavy+stores (Iz +32%), INDI told nominal  | kick peak deg PI 0.80 INDI 0.77 | psi rms PI 0.19 INDI 0.04 | r rms PI 0.31 INDI 0.06
+  V 25 plant CG aft -4%, INDI told nominal              | kick peak deg PI 0.70 INDI 0.68 | psi rms PI 0.17 INDI 0.03 | r rms PI 0.27 INDI 0.06
+  V 50 nominal                                          | kick peak deg PI 0.64 INDI 0.56 | psi rms PI 0.18 INDI 0.03 | r rms PI 0.30 INDI 0.05
+  V 50 plant heavy+stores (Iz +32%), INDI told nominal  | kick peak deg PI 0.85 INDI 0.74 | psi rms PI 0.25 INDI 0.03 | r rms PI 0.38 INDI 0.06
+  V 50 plant CG aft -4%, INDI told nominal              | kick peak deg PI 0.74 INDI 0.65 | psi rms PI 0.21 INDI 0.03 | r rms PI 0.34 INDI 0.06
+  V 70 nominal                                          | kick peak deg PI 0.66 INDI 0.53 | psi rms PI 0.19 INDI 0.03 | r rms PI 0.32 INDI 0.05
+  V 70 plant heavy+stores (Iz +32%), INDI told nominal  | kick peak deg PI 0.87 INDI 0.70 | psi rms PI 0.26 INDI 0.03 | r rms PI 0.41 INDI 0.06
+  V 70 plant CG aft -4%, INDI told nominal              | kick peak deg PI 0.76 INDI 0.62 | psi rms PI 0.23 INDI 0.03 | r rms PI 0.36 INDI 0.05
+== f22e | hold: 6 deg/s yaw kick at 2 s + yaw gusts 3 deg/s^2 rms; heading peak after kick / heading rms 4-12 s / r rms
+  V 10 nominal                                          | kick peak deg PI 0.51 INDI 0.50 | psi rms PI 0.08 INDI 0.02 | r rms PI 0.14 INDI 0.04
+  V 10 plant heavy+stores (Iz +32%), INDI told nominal  | kick peak deg PI 0.70 INDI 0.70 | psi rms PI 0.11 INDI 0.03 | r rms PI 0.18 INDI 0.06
+  V 10 plant CG aft -4%, INDI told nominal              | kick peak deg PI 0.67 INDI 0.66 | psi rms PI 0.11 INDI 0.03 | r rms PI 0.17 INDI 0.06
+  V 25 nominal                                          | kick peak deg PI 0.57 INDI 0.54 | psi rms PI 0.13 INDI 0.02 | r rms PI 0.23 INDI 0.05
+  V 25 plant heavy+stores (Iz +32%), INDI told nominal  | kick peak deg PI 0.75 INDI 0.73 | psi rms PI 0.18 INDI 0.03 | r rms PI 0.29 INDI 0.06
+  V 25 plant CG aft -4%, INDI told nominal              | kick peak deg PI 0.71 INDI 0.69 | psi rms PI 0.17 INDI 0.03 | r rms PI 0.27 INDI 0.06
+  V 50 nominal                                          | kick peak deg PI 0.61 INDI 0.52 | psi rms PI 0.17 INDI 0.02 | r rms PI 0.29 INDI 0.05
+  V 50 plant heavy+stores (Iz +32%), INDI told nominal  | kick peak deg PI 0.81 INDI 0.69 | psi rms PI 0.23 INDI 0.03 | r rms PI 0.37 INDI 0.06
+  V 50 plant CG aft -4%, INDI told nominal              | kick peak deg PI 0.75 INDI 0.65 | psi rms PI 0.21 INDI 0.03 | r rms PI 0.34 INDI 0.06
+  V 70 nominal                                          | kick peak deg PI 0.64 INDI 0.50 | psi rms PI 0.18 INDI 0.02 | r rms PI 0.31 INDI 0.05
+  V 70 plant heavy+stores (Iz +32%), INDI told nominal  | kick peak deg PI 0.85 INDI 0.66 | psi rms PI 0.25 INDI 0.03 | r rms PI 0.40 INDI 0.06
+  V 70 plant CG aft -4%, INDI told nominal              | kick peak deg PI 0.79 INDI 0.62 | psi rms PI 0.23 INDI 0.03 | r rms PI 0.37 INDI 0.06
