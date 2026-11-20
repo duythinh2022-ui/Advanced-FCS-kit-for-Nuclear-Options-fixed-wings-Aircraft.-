@@ -15,14 +15,29 @@ this manual.
 | **T/A-30 Compass** (stock trainer) | 0.6.0 | conventional tail slabs, wing-root strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin |
 | **FS-3 Ternion** (Blueprinter mod) | 0.4.2 | **two pitch pairs** (canards + aft elevators), twin rudders, flaperons + rollervons, **no TVC** |
 | **Su-30VXN Gandiva** (kyleisred's Blueprinter mod) | 0.6.5 | canards + stabs + rudders, flaperons, **canted single-axis nozzles** (each nozzle one axis, 32° outboard) |
-| **FS-20 Vortex** (stock) | 0.5.10 | delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**: lift fan, roll posts, three-bearing swivel nozzle (F-35B-style laws) |
+| **FS-20 Vortex** (stock) | 0.6.2 | delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**: lift fan, roll posts, three-bearing swivel nozzle (F-35B-style laws) |
 
 > **Status in one line:** the source here rebuilds all seven shipped release DLLs byte for byte (Rust core included), and all
 > seven benches build, compile their native core and fly (0 differences between the native core and its C# twin). The bench
 > is an approximation of the game and may not match it exactly. The kit 3.1 releases (12 Nov) were **flown and passed by the
-> author**; the releases added since (13–18 Nov) are compiled and benched, and their own release notes say which were flown.
+> author**; the releases added since (13–20 Nov) are compiled and benched, and their own release notes say which were flown.
 > Details in [§17](#17-verification-status).
 
+> **Kit 4.1 (20 Nov 2026)** brings the Vortex from 0.5.10 to **0.6.2**: new STOVL behaviour and the first reproducible,
+> attested native core. The other six jets are unchanged.
+>
+> The new STOVL behaviour:
+> - the hover yaws about its own pivot;
+> - one shared thrust budget for every axis;
+> - a speed floor and LOW HVR T/W cautions when the jet is too heavy to hover, which also count engine damage;
+> - smooth vertical touchdowns;
+> - Stability-Assist-off flight on the airframe's own axes;
+> - a caution box on the HUD.
+>
+> The reproducible native core is in [§15.3](#153-build-the-native-core). Two rules are new: optional-mod lookups
+> ([§13](#13-failure-modes-we-have-hit) F44) and the clone tool's CI step. All of it is in
+> [§8.27](#827-stovl-lift-fan-roll-posts-and-a-swivel-nozzle-vortex) and §19.23.
+>
 > **Kit 4.0 (18 Nov 2026)** brings every jet to its newest release and adds a seventh: the **FS-20 Vortex**, the first
 > **STOVL** reference (short take-off / vertical landing: a lift fan, roll posts and a swivelling nozzle flown as effectors of
 > the same allocator; [§8.27](#827-stovl-lift-fan-roll-posts-and-a-swivel-nozzle-vortex)). The **asymmetric-load system is now one
@@ -43,7 +58,7 @@ this manual.
 > the way they point ([§8.24](#824-flying-backwards-the-mirrored-nose-axis)); the main brakes help steer on the ground
 > ([§8.26](#826-ground-steering-with-the-main-brakes)). New bench sets and game-runtime checks are in
 > [§10.8](#108-added-since-kit-20-1012-nov-all-six-benches), building the core in [§15.3](#153-build-the-native-core), and
-> eleven new failure modes in [§13](#13-failure-modes-we-have-hit) (F29–F39; kit 4.0 adds F40–F43). Kit 2.0 (10 Nov) added the Compass, Ternion and Su-30, multi-core
+> eleven new failure modes in [§13](#13-failure-modes-we-have-hit) (F29–F39; kit 4.0 adds F40–F43, kit 4.1 F44). Kit 2.0 (10 Nov) added the Compass, Ternion and Su-30, multi-core
 > ticks, the F-22E's relaxed-to-neutral airframe and the push-over work. **Every problem and solution since the first kit
 > (5 Nov) is in [§19](#19-problem-and-solution-log)**.
 
@@ -828,7 +843,7 @@ asymmetric-load system is one shared file on all of them (§2.19).
 
 **Added in kit 4.0, the first STOVL jet:**
 
-| | FS-20 Vortex (0.5.10) |
+| | FS-20 Vortex (0.6.2) |
 |---|---|
 | What it is | stock STOVL fighter (prefab `SmallFighter1`); cloned from Revoker 1.4.2 on 16 Nov, F-35B-style STOVL laws added (§8.27) |
 | Aircraft match | prefab `SmallFighter1*`, or "FS-20" / "Vortex" |
@@ -894,7 +909,7 @@ fly stock or Aryx's jets.
 
 ```bash
 sudo apt install -y dotnet-sdk-8.0 python3 python3-pandas python3-numpy python3-scipy   # Linux or WSL2
-cd reference/Revoker-FCS-1.5.0           # or Ifrit-FCS-1.5.0 / Compass-FCS-0.6.0 / Vortex-FCS-0.5.10 (extract the airframe files first: §5)
+cd reference/Revoker-FCS-1.5.0           # or Ifrit-FCS-1.5.0 / Compass-FCS-0.6.0 / Vortex-FCS-0.6.2 (extract the airframe files first: §5)
 bash bench.sh build                       # sync the FCS source into bench/fcs, generate the config stub, compile
 bash bench.sh fly ias=400 alt=1500 thr=1 T=6 pitch=0:0,0.2:1 roll=0:0,1.5:0,1.7:1 fcslog=bench/out/x.csv
 bash bench.sh suite base                  # the regression suite (~10 min on 2 cores)
@@ -929,7 +944,7 @@ NO-FCS-Kit/
 │   ├── Compass-FCS-0.6.0/        plugin folder Compass_TA30.FCS/
 │   ├── Ternion-FCS-0.4.2/        plugin folder Ternion_FS3.FCS/
 │   ├── Su30-FCS-0.6.5/           plugin folder Su30_VXN.FCS/
-│   └── Vortex-FCS-0.5.10/        plugin folder Vortex_FS20.FCS/; tools/vanebox/ (vane box mesh generator),
+│   └── Vortex-FCS-0.6.2/         plugin folder Vortex_FS20.FCS/; tools/vanebox/ (vane box mesh generator),
 │                                 tools/smoke/ (offline type-load smoke test under Mono)
 │       (every tree)              tools/asym_shared/ (checkshared.py: the shared asymmetric-load files, §2.19)
 │       ├── <Namespace>.FCS/      the plugin: laws, models, glue (one DLL)
@@ -1061,8 +1076,10 @@ own identity produces identical bench output (checked on 12 Nov: clones of all s
 with the renamed core embedded and the bench with the renamed Linux core; the F-22E, Compass and Su-30 clones fly the same
 bench case as their reference, every column identical except the wall-clock timer columns. Re-checked for kit 4.0 on 18 Nov
 with the Vortex, Su-30 and Compass trees: DLL and bench build; the Vortex clone flies the STOVL conversion-to-hover case and
-the Su-30 clone a pull-and-roll case identically to their references). From the Vortex the tool also rewrites the namespace in
-`tools/smoke/`.
+the Su-30 clone a pull-and-roll case identically to their references; kit 4.1 re-checked the Vortex 0.6.2 clone the same way).
+From the Vortex the tool also rewrites the namespace in `tools/smoke/`. Since kit 4.1 it also renames the core in
+`.github/workflows/native-core.yml` and `native/build-repro.sh`. `PORT_TODO.md` reminds you to set your own repository in the
+attestation line and to commit the reproducible build after any Rust change.
 
 It also **renames the native core** to `<file-prefix>_FcsCore` (the `Lib` constant in `FcsNative.cs`, Cargo's `[lib]` name,
 the bench's copy step, `native/prebuilt/<Lib>.dll`). Windows binds a `DllImport` by module name, so a clone that kept the
@@ -1576,7 +1593,7 @@ down, slewed at 0.25 /s; its first bearing also yaws ±15° at every speed), a l
 game sets its force to cancel the main nozzle's pitch moment, plus a pitch term), and two roll posts (8 kN each × thrust ratio,
 one side at a time, below 120 m/s). The game flies it with fixed mixing and auto modes; nothing knows the jet's authority.
 
-**Solution** (`Stovl.cs`, `SwivelLink.cs`, `StovlHooks.cs`; Vortex 0.1.0 → 0.5.10):
+**Solution** (`Stovl.cs`, `SwivelLink.cs`, `StovlHooks.cs`; Vortex 0.1.0 → 0.6.2):
 - **The lift system becomes allocator effectors** like any surface: lift-fan pitch, the roll posts, the nozzle's yaw bearing,
   and since 0.5.0 the fan's **vane box** (thrust line 10° forward to 42° aft at 30°/s). The same INDI rate loop and allocator do
   the attitude control in the hover as in forward flight. `StovlHooks` swaps the allocator's commands into the game's
@@ -1606,7 +1623,43 @@ one side at a time, below 120 m/s). The game flies it with fixed mixing and auto
 - **The ship.** `StovlShipRelative`: within 800 m of a ship the hover references the ship's speed, blended in and out, with the
   game's auto-hover "H" icon shown (flashing while blending).
 
-**Evidence (bench).** Conversion at 250 km/h to a hover, wings level, 0 native fallbacks over 32,976 solves (§17). Vane box:
+- **Kit 4.1 additions (Vortex 0.5.12–0.6.1, 19–20 Nov).** Each is a dev switch, on by default; the release notes have the bench
+  numbers.
+  - *The hover yaws about its own pivot* (`StovlYawSideFF`, `StovlYawPivot`):
+    - The nozzle's yaw bearing pushes the whole jet sideways. It turns the jet about a point yaw inertia / (mass × nozzle arm)
+      ahead of the CG (3.2 m at 13.8 t).
+    - The side-speed loop and the position hold now look at that point, so nothing is banked for the yaw.
+    - Hover full pedal: bank 6.3 → 0.3°; drift at the pivot 6.4 → 0.26 m.
+  - *One shared thrust budget* (`StovlClimbShare` → `StovlSharedBudget`): a climb, easing a sink and stopping a descent share the
+    thrust with the side and fore-aft commands by one factor. Only the released-stick height hold and what the ground needs
+    (the touchdown envelope) stay whole. Before this, a side stick asked just after a climb waited ~3 s for the thrust.
+  - *What the lift system can carry* (`StovlLiftCorrect`, `StovlWingLiftBudget`, `StovlEngineCondition`):
+    - The conversions between a tilt and the acceleration it gives use the lift, not the weight.
+    - The budget counts the weight the wing carries.
+    - Every capability figure counts engine damage, by the game's own law: reachable RPM falls with condition, and dry thrust
+      falls with RPM.
+  - *Too heavy to hover* (`StovlMinSpeedFloor`, `StovlManeuverTilt` 20°, `StovlLowMarginHover`, `StovlLowTwPedal`):
+    - Hover T/W on the laws' scale under 1.02 (off over 1.04): **LOW HVR T/W: STO/RVL ONLY**. In the air the lever's
+      deceleration stops at a speed floor where the wing and thrust carry the weight with margin. No pedal pirouette.
+    - Hovers, but without 20° of manoeuvring tilt: **LOW HVR T/W: REDUCED MNVR**.
+    - `MIN nn KT` shows on the throttle gauges.
+  - *Touchdown* (`StovlSmoothTouchdown`, `StovlTouchdownAccel`): the descent is slowed to the highest sink at which no wheel that
+    has touched leaves the ground again. This comes from a drop model of the jet on its legs (the game's spring and damper
+    rates, mass, pitch inertia). Bench 13.8 t: contact 5.0 m/s and a 0.24 m hop → 1.93 m/s, no hop.
+  - *Lever stop* (`StovlLeverStopModel`, `StovlTiltAllRegimes`): the aft detent asks for the stop the jet can make, and the
+    braking tilt is worked out in every regime. A stop from speed is one nose-up and one nose-down, with no dip at the hand-over.
+  - *Stability Assist off at speed* (`StovlFreeWingAxes`): pitch and yaw fade from Euler rates to the airframe's own axes with
+    the same wing-borne share as the roll. The yaw rate is the one that keeps the sideslip still. This fixed a departure
+    (Euler pitch at −55° bank = +24.6 deg/s of body yaw). Bench: sideslip in a banked full pull 46.2 → 0.4°.
+  - *Caution box* (`CautionBox.cs`, `CautionBox` / `CautionColor`, player keys):
+    - A copy of the game's message box placed under it, one line per caution for as long as the condition lasts.
+    - The game's own line can't hold a message: each 4 s timer deletes the first line.
+- **Not solved (0.6.2 notes):**
+  - With Stability Assist off, holding full aft until the nose is vertical and letting go still tumbles, because the bank hold
+    works on Euler angles.
+  - The heading kick at bank reversals with a side stick plus a climb is reduced (6.5 → 4.7°) but not gone.
+
+**Evidence (bench).** Conversion at 250 km/h to a hover, wings level, 0 native fallbacks over 33,022 solves (0.6.2, §17). Vane box:
 hover → 30 kt in 4.35 s (was 6.70) at a level attitude, height band −0.8 / +3.8 cm. Sideways (0.5.10): full-stick side speed
 7.2 kt, 90 % reached in 2.65 s, stop in 2.57 s, bank ≤ 12.3°, height −2 / +1 cm. The STOVL side is modelled from the game's code,
 not calibrated against a flight log.
@@ -2286,6 +2339,24 @@ plant. Each was found in flight telemetry, reproduced on the bench and fixed at 
 - *Fix:* run `checkshared.py` across all trees before any release, and say in the notes when a jet is deliberately left on an
   older shared text
 
+**F44. An optional-mod lookup in a per-frame path** (Vortex 0.5.11)
+- *Cause:*
+  - The Vortex looked up the Detents mod's type with `AccessTools.TypeByName`. On a miss that scans every type of every loaded
+    assembly twice and logs a warning.
+  - A miss also left the lookup "not done", so `Run()` repeated it on every throttle frame, in any jet.
+  - Tester report: 360 → 10 fps without the Detents mod installed.
+- *Fix* (the rule since 19 Nov):
+  - Never look up an optional mod in a per-frame or hot path.
+  - Cache a miss as well as a hit. A miss is final once the chainloader is done.
+  - Use each assembly's own `GetType(name, false)` (a hash lookup) instead of `TypeByName`.
+  - Handle the mod being absent.
+- *Still open (kit 4.1):* every jet's `Hooks.VentType` and `FlapSystem.ResponderType` (Aryx F-22E types, optional on all but the
+  F-22E) are `static readonly` `TypeByName` calls:
+  - They are cached and run once per session, so there is no frame cost. But each miss still costs one full type scan plus a
+    warning line.
+  - If the type initialiser runs before Aryx's mod has loaded, the miss is permanent.
+  - Changing this would change released DLLs, so it is left for each jet's next release.
+
 **Lesson** (from the paper): every cost term in a nonlinear allocator needs consistent units with the error term, an explicit
 statement of which state it must not act in, and a test with a deliberately wrong model. Several failures were **bistable**: a
 case landed on either branch depending on a 3 kt change of entry speed, so release sets are flown at several speeds.
@@ -2329,6 +2400,10 @@ These are the rules the author set and the code has been held to. Follow them in
 18. **Flying backwards, stick and pedals point the nose,** on one axis blended by AoA (|cos α| roll share, §8.24). Tom's rule,
     12 Nov, for every jet.
 19. **Measure performance in the game,** switch by switch, before claiming a saving (bench µs on .NET are not Mono µs).
+20. **Optional mods are looked up once, never per frame** (Tom, 19 Nov): cache a miss as well as a hit, use each assembly's
+    `GetType(name, false)` instead of `AccessTools.TypeByName`, and work when the mod is absent (F44).
+21. **A term added to a law goes into that law's command,** inside its envelope and rate budget, never after its output
+    (Vortex 0.5.23: a turn term added after the CTOL pitch law asked 245 deg/s at 80° of bank).
 
 [↑ Contents](#contents)
 
@@ -2345,7 +2420,7 @@ cd reference
 (cd Compass-FCS-0.6.0  && bash build.sh Compass_TA30.FCS Compass_TA30_FCS.dll)
 (cd Ternion-FCS-0.4.2  && bash build.sh Ternion_FS3.FCS Ternion_FS3_FCS.dll)
 (cd Su30-FCS-0.6.5     && bash build.sh Su30_VXN.FCS Su30_VXN_FCS.dll)
-(cd Vortex-FCS-0.5.10  && bash build.sh Vortex_FS20.FCS Vortex_FS20_FCS.dll)   # also needs Rewired_Core, Unity.TextMeshPro,
+(cd Vortex-FCS-0.6.2   && bash build.sh Vortex_FS20.FCS Vortex_FS20_FCS.dll)   # also needs Rewired_Core, Unity.TextMeshPro,
                                                                               # UnityEngine.UI / UIModule / TextRenderingModule /
                                                                               # InputLegacyModule from Managed (HUD and input hooks)
 ```
@@ -2382,11 +2457,28 @@ cp native/fcs_core/target/x86_64-pc-windows-gnu/release/<Lib>.dll native/prebuil
   `RUSTBIN`, `RUST_SRC` and `MINGW_GCC` are environment overrides; the defaults are the author's paths.
 - Two builds of the same source differ in a few header bytes (the linker's time stamp): **ship the build you tested**, and bump
   the ABI number on both sides for any change to a shared struct.
+- **Reproducible build (Vortex 0.6.2, the model for the others).** A NOMNOM reviewer took 45+ minutes to reproduce the old
+  build-std recipe and still couldn't match it. The Vortex now builds its core reproducibly:
+  - `native/fcs_core/rust-toolchain.toml` pins Rust 1.97.0 and the Windows target; rustup installs them.
+  - `native/build-repro.sh` is a plain `cargo build --release --locked --target x86_64-pc-windows-gnu`. It remaps the build
+    paths and stops the linker writing a time stamp. Reference environment: `rust:1.97.0-bookworm` with Debian's mingw-w64.
+  - `.github/workflows/native-core.yml` (it runs from a repository root, not inside this kit):
+    - builds the core twice, in different folders, and the two must match;
+    - publishes a Sigstore build-provenance attestation;
+    - fails if `native/prebuilt/<Lib>.dll` is not that build.
+  - A reviewer checks a shipped core with `gh attestation verify <Lib>.dll -R <owner>/<repo>`.
+  - The new core gave the same output bytes as the old one over 32,281 solves, 37,398 grid-kernel calls and 801 coupled checks
+    (0.6.2 notes).
+  - The other six jets' cores are still the old local build.
+  - **Offline catch:** with the toolchain file present, `bash bench.sh build` (Linux `.so`) asks rustup to download 1.97.0. With
+    no network, run it with `RUSTUP_TOOLCHAIN=stable` (or any installed 1.97) to use the installed compiler. That is how kit
+    4.1 built the bench.
 - **Kit verification note:** for kit 3.0 the Linux `.so` was rebuilt for all six (rustup cargo 1.97.0) and every bench ran
   native, but the Windows core could **not** be rebuilt in the kit's environment (no Windows target for that toolchain; the
   apt Rust was 1.91, whose build-std failed). The kit therefore relies on the prebuilt cores, which are exactly the ones inside
   the release DLLs (the plugin md5s match, §17). Kit 4.0 is the same: the seven Linux `.so` files were rebuilt (cargo 1.97)
-  and every bench ran native; the Windows cores are the prebuilt ones.
+  and every bench ran native; the Windows cores are the prebuilt ones. Kit 4.1 likewise, with the Vortex core now the
+  reproducible build (not rebuilt here: rustup could not download the pinned toolchain).
 
 [↑ Contents](#contents)
 
@@ -2423,25 +2515,32 @@ roll unmade (look for a cost holding a trim).
 
 ## 17. Verification status
 
-Checked when this kit was assembled (kit 4.0, 18 Nov 2026):
+Checked when this kit was assembled (kit 4.0, 18 Nov 2026; the Vortex column re-done for kit 4.1, 20 Nov):
 
-| Check | F-22E 4.5.1 | Ifrit 1.5.0 | Revoker 1.5.0 | Compass 0.6.0 | Ternion 0.4.2 | Su-30 0.6.5 | Vortex 0.5.10 |
+| Check | F-22E 4.5.1 | Ifrit 1.5.0 | Revoker 1.5.0 | Compass 0.6.0 | Ternion 0.4.2 | Su-30 0.6.5 | Vortex 0.6.2 |
 |---|---|---|---|---|---|---|---|
-| Plugin rebuilt from this folder with `build.sh`, md5 equal to the shipped release DLL (native core embedded) | ✅ `5fddd5b4…` | ✅ `8246c4ea…` | ✅ `8ed972be…` | ✅ `18bb6ccd…` | ✅ `ca471980…` | ✅ `b8028905…` | ✅ `66fc0ce1…` |
+| Plugin rebuilt from this folder with `build.sh`, md5 equal to the shipped release DLL (native core embedded) | ✅ `5fddd5b4…` | ✅ `8246c4ea…` | ✅ `8ed972be…` | ✅ `18bb6ccd…` | ✅ `ca471980…` | ✅ `b8028905…` | ✅ `f8005ce7…` |
 | Bench compiles from this folder, with the Linux native core (`lib<Lib>.so`), no airframe files present | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Bench flies a scripted pull-and-roll case (airframe files supplied, §5); native paths used (`FCS_NATIVE_STATS`: 0 fallbacks, 144 coupled LPs) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Same case with `NativeAllocatorCheck=2` (every solve both ways): mismatches | 0 / 2,927 | 0 / 5,302 | 0 / 5,279 | 0 / 5,303 | 0 / 5,310 | 0 / 5,281 | 0 / 5,279 |
-| STOVL case on the bench (conversion at 250 km/h, decelerate to a hover; 0 fallbacks over 32,976 solves) | — | — | — | — | — | — | ✅ 252 → 3 km/h, wings level, height 309–348 m |
+| Same case with `NativeAllocatorCheck=2` (every solve both ways): mismatches | 0 / 2,927 | 0 / 5,302 | 0 / 5,279 | 0 / 5,303 | 0 / 5,310 | 0 / 5,281 | 0 / 4,333 ¹ |
+| STOVL case on the bench (conversion at 250 km/h, decelerate to a hover) | — | — | — | — | — | — | ✅ 252 → 3 km/h, wings level, height 309–348 m, 0 fallbacks ¹ |
 | Cloned by `tools/new_airframe.py` → game DLL (new core name embedded) and bench both build | — | — | — | ✅ | — | ✅ | ✅ |
 | Clone flies the same bench case as the reference | — | — | — | — | — | ✅ identical | ✅ STOVL case identical |
 | Windows native core rebuilt from source in the kit's environment | ❌ (§15.3: prebuilt core used) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Plugin loaded on the game's own Mono under Wine | not re-run for kit 4.0 (kit 3.0: ✅ on all six) | | | | | | not run |
-| **This release flown in game** (its own release notes) | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ 0.5.10 bench only; earlier Vortex builds were flown during development |
+| **This release flown in game** (its own release notes) | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ 0.6.2 bench only (0.5.11–0.6.2 all bench only); 0.1–0.5 dev builds were flown during development |
 | Kit 3.1 release of this jet flown and passed by the author (Tom, 12 Nov) | ✅ 4.3.0 | ✅ 1.3.0 | ✅ 1.4.1 | ✅ 0.5.0 | ✅ 0.4.0 | ✅ 0.6.0 | (not in kit 3.1) |
+
+¹ Vortex, kit 4.1: `bench.sh fly ias=400 alt=1500 thr=1 T=6 pitch=0:0,0.2:1 roll=0:0,0.2:1`, run on 0.5.10 and 0.6.2. The
+output is byte-identical between them (no CTOL change since 0.5.10). Kit 4.0's 5,279 for this column came from a run whose
+arguments were not recorded. The STOVL case: `NativeAllocatorCheck=2` 0 mismatches over 33,022 solves. It stops 70 m shorter on 0.6.2 (1,611 vs 1,681 m),
+from the 0.6.0 lever-stop change.
+The 0.6.2 Windows core was checked against 0.6.1's by its author on Windows (0 output differences, §15.3). The kit only checks
+the embedded copy's sha256 (`e20c7b99…`).
 
 What that means for you: the source here *is* exactly what the seven releases run. The kit 3.1 releases of the first six jets
 were flown and passed by the author; the releases since (shared asymmetric-load code, engine-out zero-thrust match and
-recovery thrust, the Su-30's drag and limits, the Revoker's yaw-nozzle gate, and the whole Vortex) are compiled and benched,
+recovery thrust, the Su-30's drag and limits, the Revoker's yaw-nozzle gate, and the whole Vortex up to 0.6.2) are compiled and benched,
 and their release notes (`release-notes/` in each tree) give each one's own status. **The bench is an approximation and may
 not be accurate:** where a bench number and the game disagree, the game is the reference. The bench is good for direction and
 A-vs-B regressions, never for absolute numbers (§10.7). The Compass bench has no flight-log calibration; the Ternion's has one
@@ -3034,6 +3133,52 @@ the STOVL design is §8.27. The milestones, with what was wrong and what fixed i
 - **Status:** every release benched; the game-side code (hooks, HUD, vane box model) compiled only on the bench. Tom flew the
   development builds through the three days (the logs named in the notes); 0.5.10 itself is not flown.
 
+### 19.23 FS-20 Vortex (0.5.10 → 0.6.2, 19–20 Nov)
+Seventeen releases in two days, all STOVL except two. The design is in §8.27. The milestones, with what was wrong and what fixed it:
+- **0.5.11 · Frame rate without the Detents mod.** A per-frame `TypeByName` miss took a tester from 360 to 10 fps (F44). Now a
+  hash lookup per assembly, and a miss is final.
+- **0.5.12–0.5.13 · Yaw without side skid.** The nozzle's yaw push moves the whole jet. 0.5.12 banked against it, which made
+  the yaw wait for the bank. 0.5.13 holds the hover at the yaw's own pivot instead: hover pedal bank 6.3 → 0.3°, 90 % of rate in
+  1.28 s.
+- **0.5.14 · A climb no longer blocks the other axes.** A climb kept its whole demand back from the translation budget, so a
+  side stick, lever or pedal asked 0.5 s after it waited ~3 s. Now shared by one factor: side stick 1 m/s in 4.22 → 1.30 s.
+- **0.5.15** all-caps HUD messages with cockpit abbreviations (text only).
+- **0.5.16 · Five switches:**
+  - lift correction;
+  - wing lift in the budget (45 kt pedal turn 9.1 → 10.7 deg/s);
+  - speed floor when too heavy to hover (16.5 t held at 39.4 kt, height ±0.00 m);
+  - the caution box;
+  - smooth touchdown (5.0 m/s and a hop → 1.93 m/s, no hop).
+- **0.5.17–0.5.21 · How heavy is too heavy:**
+  - 0.5.17 keeps a 20° manoeuvring margin at the floor (Tom: "I want the min speed to leave useful maneuvering authority").
+  - 0.5.20 let a jet that can hover, but without that margin, hover with a warning. 0.5.17 had sent a 15.15 t jet to a 34 kt
+    floor.
+  - 0.5.21 added a 2 % climb reserve to the "can hover" line (a 15.85 t jet at 1.005 could not take off vertically) and the
+    caution text REDUCED MNVR.
+- **0.5.18 · Surface wobble in pedal turns** (1.2–1.5 Hz roll oscillation):
+  - The pedal's full rate used this tick's yaw authority, which moved ±5 % with what the roll axis did with the same posts.
+  - Through the turn's bank target, that closed a loop.
+  - Now the authority's mean over the stop time: aileron split 45° peak to peak → 0–8°.
+- **0.5.19 · Touchdown bounce after a push-down.** The envelope assumed a steady descent at its start. It now counts the
+  downward acceleration: 2 bounces → none, contact 1.65–1.86 m/s.
+- **0.5.22–0.5.23 · Low-T/W pedal, stiffness after a VTO, nose hold in the CTOL blend.**
+  - 0.5.22's turn term was added after the CTOL pitch law, past its AoA envelope. At 75–83° of bank it asked 120–245 deg/s:
+    AoA 160°, a departure.
+  - 0.5.23 moved it into the law's rate command: max AoA 47.6 → 23.9°.
+  - Lesson: a term added after a law bypasses that law's limits; put it into the law's command.
+- **0.5.24–0.5.25 · Descent stop shares the budget.** 0.5.24's branch was replaced by one sharing rule for every axis (Tom: "is
+  this an on top fix? i want the fcs has to share the budget for every axis when needed").
+- **0.5.26 → 0.6.0 · Lever stop and Stability-Assist-off pull.**
+  - Lever stop: one nose-up and one nose-down (peak nose-up rate 10.7 → 6.3 deg/s, stopped 2 s sooner).
+  - Stability-Assist-off pull at bank: body axes, sideslip 46.2 → 0.4°.
+  - 0.5.26 was folded into 0.6.0 the same day.
+- **0.6.1 · Engine damage in the hover T/W.** After hard landings the jet sat at 88 % throttle unable to lift off, with no
+  caution: every capability figure took the engine's static thrust. Now the game's RPM-ceiling law is applied: condition 0.2 →
+  hover T/W 1.274 → 0.86, STO/RVL ONLY.
+- **0.6.2 · Reproducible, attested native core** (§15.3). No law change; IL identical to 0.6.1.
+- **Status:** every release benched, none flown as that version (each release's notes). The caution box has not been seen on a
+  screen in any of the notes.
+
 [↑ Contents](#contents)
 
 ## 20. History and further reading
@@ -3049,7 +3194,7 @@ the STOVL design is §8.27. The milestones, with what was wrong and what fixed i
 - `reference/<Jet>/native/README.md`: the native core's rules, build and checks (F-22E's is the fullest).
 - `docs/design-history/F22E_airframe_X2_handoff_2026-11-09.md`: the build hand-off for the F-22E's X2 airframe (goals, decision,
   acceptance targets, phase 2), with the study kit in `reference/F22E-FCS-4.5.1/studies/x2_study_kit/`.
-- Documents named `claude/...md` in this manual are the author's project notes (6–18 Nov findings); they are not in the kit, and
+- Documents named `claude/...md` in this manual are the author's project notes (6–20 Nov findings); they are not in the kit, and
   what they found is summarised in §8, §10.7–10.8 and §19.
 - Each reference tree's `release-notes/` and its `README.md` / `bench/CALIBRATION*.md` / `bench/DAMAGE.md`.
 
@@ -3062,13 +3207,14 @@ loaded reversal, ground brakes) → 4.2.0 (coupled check, off) → 4.3.0 (flying
 governor) → 0.16 → 0.17 (push-over hand-offs) → 1.0.0 (several cores) → 1.3.0 → 1.5.0. Revoker 0.1 (28 Oct) → 0.6 (3.0.0 governor) → 0.8.3 →
 1.0.0 → 1.4.1 → 1.5.0. Compass 0.1.0 (5 Nov, fork of Revoker 0.8.2) → 0.1.12 → 0.2.0 → 0.5.0 → 0.6.0. Ternion 0.1.0 (7 Nov, fork of Compass
 0.1.11) → 0.1.12 → 0.2.0 → 0.4.0 → 0.4.2. Su-30 0.1.0 (7 Nov, fork of Ternion 0.1.8) → 0.2.3 (10 Nov) → 0.6.0 (12 Nov) →
-0.6.5 (17 Nov). Vortex 0.1.0 (16 Nov, clone of Revoker 1.4.2) → 0.3.0 (shared code) → 0.5.10 (18 Nov).
+0.6.5 (17 Nov). Vortex 0.1.0 (16 Nov, clone of Revoker 1.4.2) → 0.3.0 (shared code) → 0.5.10 (18 Nov) → 0.6.0 (20 Nov) →
+0.6.2 (reproducible core).
 
 **Kit editions:** 1.0 (5 Nov 2026: F-22E 3.0.1, Ifrit 0.16.0, Revoker 0.8.2); 2.0 (10 Nov 2026: six jets, §19.1–19.7); 3.0
 (12 Nov 2026: F-22E 4.3.0, Ifrit 1.3.0, Revoker 1.4.1, Compass 0.5.0, Ternion 0.4.0, Su-30 0.6.0; native core, coupled check,
 loaded reversals, flying backwards, ground brakes; §19.8–19.14); 3.1 (12 Nov 2026: Part IV, §21–24); 4.0 (18 Nov 2026:
 F-22E 4.5.1, Ifrit 1.5.0, Revoker 1.5.0, Compass 0.6.0, Ternion 0.4.2, Su-30 0.6.5 and the new Vortex 0.5.10; shared
-asymmetric-load code, engine-out zero-thrust match, STOVL; §19.15–19.22).
+asymmetric-load code, engine-out zero-thrust match, STOVL; §19.15–19.22); 4.1 (20 Nov 2026: Vortex 0.6.2; §19.23).
 
 [↑ Contents](#contents)
 

@@ -14,7 +14,7 @@ JETS = [("F-22E", "reference/F22E-FCS-4.5.1/Aryx_F22E_StrikeRaptor.FCS", "Aryx_F
         ("Compass", "reference/Compass-FCS-0.6.0/Compass_TA30.FCS", "Compass_TA30.FCS"),
         ("Ternion", "reference/Ternion-FCS-0.4.2/Ternion_FS3.FCS", "Ternion_FS3.FCS"),
         ("Su-30", "reference/Su30-FCS-0.6.5/Su30_VXN.FCS", "Su30_VXN.FCS"),
-        ("Vortex", "reference/Vortex-FCS-0.5.10/Vortex_FS20.FCS", "Vortex_FS20.FCS")]
+        ("Vortex", "reference/Vortex-FCS-0.6.2/Vortex_FS20.FCS", "Vortex_FS20.FCS")]
 
 # layer, one-line role. Layers:
 #   LAW      control laws / allocation / estimation - the FCS itself
@@ -47,6 +47,7 @@ ROLE = {
     "ReleaseGuard.cs": ("SYSTEM", "Vortex: STOVL weapon-release guard - holds a release that would leave more lateral imbalance than the roll effectors can trim (AuthorityShare of the live roll moment); hold the trigger to override."),
     "HudShipMatch.cs": ("EXTRA", "Vortex: shows the game's auto-hover 'H' icon while the STOVL laws hover on a ship's speed (flashing while blending)."),
     "HudThrottle.cs": ("EXTRA", "Vortex: the throttle gauge reads what the STOVL lever commands (0 GS, +12 KT, HOLD SPD...) and marks the zero-ground-speed detent."),
+    "CautionBox.cs": ("EXTRA", "Vortex: persistent HUD caution lines in a copy of the game's message box, held for as long as the condition lasts (no overlap)."),
     "ThrottleDetent.cs": ("GLUE", "Vortex: hold detent at the STOVL zero-ground-speed throttle for keyboard/button throttles (as baanish's Detents mod)."),
     "CoupledCap.cs": ("LAW", "Coupled asymmetric-load check (Ternion 0.2.2, all six since 12 Nov): per sweep AoA a small LP over every effector's moment points gives the flight-path roll left each way with the load, pitch held and no sideslip acceleration; the AoA cap sits where the weaker side falls to AsymCoupledReserveMax of the roll range (FindTop = the lower edge of the top over-threshold stretch). Off by default on the F-22E."),
     "FcsNative.cs": ("GLUE", "Native (Rust) core wrapper (F-22E 4.0.0+, all six): DllImport of <Jet>_FcsCore (allocator solve, grid kernels, coupled-check LP), ABI check, load-time self-tests against C# twins, extraction of the embedded core to BepInEx/cache/<Lib>/<sha>/, C# fallback."),

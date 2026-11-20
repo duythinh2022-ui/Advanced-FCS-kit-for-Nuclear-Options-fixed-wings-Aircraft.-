@@ -21,13 +21,15 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
     twin rudders, no TVC; `StructureFix`, engine-out zero-thrust match, spin recovery.
   - `Su30-FCS-0.6.5/Su30_VXN.FCS/`: kyleisred's Blueprinter Su-30VXN, canards (pitch-only) + stabs + rudders, canted single-axis
     nozzles (`CantedTvc`), `ThrustLineAtCg`, low-speed TVC roll, measured AoA/g capture, soft AoA limit.
-  - `Vortex-FCS-0.5.10/Vortex_FS20.FCS/`: stock FS-20, delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**
+  - `Vortex-FCS-0.6.2/Vortex_FS20.FCS/`: stock FS-20, delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**
     (README §8.27): lift fan, roll posts, three-bearing swivel nozzle and lift-fan vane box as allocator effectors (`Stovl.cs`,
-    game side `SwivelLink.cs` / `StovlHooks.cs`), F-35B-style unified laws, conversion on Flight Assist.
+    game side `SwivelLink.cs` / `StovlHooks.cs`), F-35B-style unified laws, conversion on Flight Assist; since 0.6.x a speed floor
+    and LOW HVR T/W cautions (engine damage counted), yaw-pivot hover, one shared thrust budget, `CautionBox.cs`, and the
+    reproducible, attested native core (`native/build-repro.sh`, `rust-toolchain.toml`, `.github/workflows/native-core.yml`).
 - **What changed since kit 1 (5 Nov) is README §19**, one entry per problem: §19.1–19.7 up to kit 2.0 (push-overs, the F-22E
   airframe, threading, fuel, no-TVC jets), §19.8–19.14 up to kit 3.0 (native core, coupled asymmetric-load check, loaded
   reversals, flying backwards, ground brakes, Su-30 0.2.4–0.6.0), §19.15–19.22 up to kit 4.0 (shared asymmetric-load code,
-  engine-out zero-thrust match and recovery thrust, the Vortex). Read the relevant part before touching any of those.
+  engine-out zero-thrust match and recovery thrust, the Vortex), §19.23 kit 4.1 (Vortex 0.5.11–0.6.2). Read the relevant part before touching any of those.
 - **The asymmetric-load system is one shared file** (`AsymShared.cs` + `AsymCap.cs` + `CoupledCap.cs`, README §2.19): the same
   text on every jet but the namespace line; per-jet behaviour only through `Plugin` settings. Check with
   `tools/asym_shared/checkshared.py`. Revoker 1.5.0 carries the first shared text (inert on a single-engine jet);
@@ -42,7 +44,7 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
 - The source in this kit rebuilds the shipped release DLLs byte for byte (README §17). Keep it that way unless a change is
   intended.
 - `docs/MODULE_MAP.md` gives every file a layer: LAW, MODEL, AERO, SYSTEM, GLUE, EXTRA, and how far each jet moved from its
-  parent. `docs/CONFIG_REFERENCE.md` lists all 597 config keys with the seven jets' defaults. Regenerate both with
+  parent. `docs/CONFIG_REFERENCE.md` lists all 619 config keys with the seven jets' defaults. Regenerate both with
   `tools/gen_*.py` after changing sources.
 - README Part IV: §21 is a control theory primer (AoA, static margin, PID limits, velocity-vector roll, INDI, allocation,
   capture); §22 the workflow every change went through and the tools; §23 the caveats of porting by hand; §24 airframe aerodynamics recommendations (margin, surfaces,
@@ -120,6 +122,12 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
     branch, never in a block after it (F-22E 4.1.1).
 22. **Flying backwards, stick and pedals point the nose** (Tom, 12 Nov, every jet): roll share |cos α|, yaw sin α, one axis.
 23. **Config revisions are bound before `MigrateOldConfig`** (it clears unbound keys and saves; Su-30 0.3.4).
+24. **Optional-mod lookups** (Tom, 19 Nov; Vortex 0.5.11, a tester lost 360 → 10 fps): never in a per-frame or hot path;
+    cache misses as well as hits (a miss is final once the chainloader is done); no `AccessTools.TypeByName` for an optional
+    mod's type (each assembly's `GetType(name, false)` instead); handle the mod being absent. Open: every jet's `VentType` /
+    `ResponderType` still use a one-time `TypeByName` (MANUAL F44); fix at each jet's next release.
+25. **A term added to a law goes into that law's rate command,** inside its AoA envelope and rate budget, never added after it
+    (Vortex 0.5.23).
 
 
 ## 4. Procedures
@@ -181,6 +189,10 @@ embedded). `build.sh` embeds `native/prebuilt/<Lib>.dll`. The Dev DLL is compile
 `x86_64-pc-windows-gnu` target, or Ubuntu rustc-1.97 + rust-1.97-src with build-std, and mingw-w64 gcc). Copy the new DLL into
 `native/prebuilt/`, rebuild the plugin, run the identity suites (rule 19) and, if you can, `native/verify/` under Wine with the
 game's `mono-2.0-bdwgc.dll` (`jetcheck`, `multicheck`). Ship the core you tested (two builds differ in time-stamp bytes).
+Vortex (0.6.2) and anything cloned from it: the shipped core is the reproducible build, `bash native/build-repro.sh` (pinned
+`rust-toolchain.toml`, no time stamp, paths remapped; CI builds twice, attests and checks `native/prebuilt/`); commit its output
+as `native/prebuilt/<Lib>.dll`. Offline, rustup cannot fetch the pinned toolchain: run the bench build with
+`RUSTUP_TOOLCHAIN=stable` (any installed 1.97).
 
 ### 4.5c Lateral-law or asymmetric-load change: extra bench sets
 The suite has no loaded reversal and no tail slide. Also run `bench/an/loadrev.sh` (88 loaded reversals / roll spam),
@@ -205,7 +217,7 @@ through §4.4 as law changes.
 | envelope sweeps | `ComputeEnvelope`, `AuthCapStep`, `AsymStep`, `YawHealthStep` |
 | engine out | `VmcApply`, `ThrustMatchApply`, `EngineOutAoACap` (with `EngineOutZeroThrust` off), zero-thrust match `EngineOutZeroThrust` / `EngineOutMatchAoA`, `ZeroThrustPlanned()`, `EngSplitOut()`, recovery `EngineOutRecoverThrust` / `EngineOutRecoverUse` (F-22E, Su-30) |
 | shared asymmetric-load code | `AsymShared.cs` (`AsymSweepPoint`, `CplSolve`, `AsymStep`, `AuthCapStep`, `FuelTrimStep`, `DamageGateStep`, `AsymGate`), `tools/asym_shared/checkshared.py` |
-| STOVL (Vortex) | `Stovl.cs` (`StovlSystem`, `CtolW`, TRC, thrust fit, vanes), `SwivelLink` (game's `SwivelDuctSystem` by reflection), `StovlHooks`, `ReleaseGuard`, `ThrottleDetent`, `HudThrottle`, `HudShipMatch`; config section `9. STOVL`; bench `stovl` mode (`bench/sim/StovlTest.cs`, `BenchStovl.cs`) |
+| STOVL (Vortex) | `Stovl.cs` (`StovlSystem`, `CtolW`, TRC, thrust fit, vanes), `SwivelLink` (game's `SwivelDuctSystem` by reflection), `StovlHooks`, `ReleaseGuard`, `ThrottleDetent`, `HudThrottle`, `HudShipMatch`, `CautionBox`; config section `9. STOVL`; bench `stovl` mode (`bench/sim/StovlTest.cs`, `BenchStovl.cs`) |
 | allocator | `Allocator.Solve`, `axisWeight`, `fightK`, `pitchFightK`, `ReachPass`, `TwoHorizon`, `regScale` |
 | capacity | `CapacityEstimator.Step`, `Group`, `capZeP/N`, `capTrZeP/N`, gains `CapGain*` (F-22E) / `GainZ`,`GainX` (stock) |
 | effector table / live node | `Effector.MAt`, `Effector.SetLiveNode`, `SurfaceEffector.Evaluate`, `AnchorLateral` |

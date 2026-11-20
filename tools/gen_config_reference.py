@@ -16,7 +16,7 @@ JETS = [("F-22E", "reference/F22E-FCS-4.5.1/Aryx_F22E_StrikeRaptor.FCS/Plugin.cs
         ("Compass", "reference/Compass-FCS-0.6.0/Compass_TA30.FCS/Plugin.cs"),
         ("Ternion", "reference/Ternion-FCS-0.4.2/Ternion_FS3.FCS/Plugin.cs"),
         ("Su-30", "reference/Su30-FCS-0.6.5/Su30_VXN.FCS/Plugin.cs"),
-        ("Vortex", "reference/Vortex-FCS-0.5.10/Vortex_FS20.FCS/Plugin.cs")]
+        ("Vortex", "reference/Vortex-FCS-0.6.2/Vortex_FS20.FCS/Plugin.cs")]
 
 
 def split_args(s, i):

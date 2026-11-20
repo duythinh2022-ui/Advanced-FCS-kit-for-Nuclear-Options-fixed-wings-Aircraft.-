@@ -46,7 +46,7 @@ SRC = {
                     harmony="tom.ternion_fs3.fcs", csv="Ternion_FCS_", sync="bench/rsync.sh", lib="Ternion_FcsCore"),
     "su30": dict(dir="reference/Su30-FCS-0.6.5", ns="Su30_VXN.FCS", title="Su-30VXN FCS", short="Su-30 FCS",
                  harmony="tom.su30_vxn.fcs", csv="Su30_FCS_", sync="bench/rsync.sh", lib="Su30_FcsCore"),
-    "vortex": dict(dir="reference/Vortex-FCS-0.5.10", ns="Vortex_FS20.FCS", title="FS-20 Vortex FCS", short="Vortex FCS",
+    "vortex": dict(dir="reference/Vortex-FCS-0.6.2", ns="Vortex_FS20.FCS", title="FS-20 Vortex FCS", short="Vortex FCS",
                    harmony="tom.vortex_fs20.fcs", csv="Vortex_FCS_", sync="bench/rsync.sh", lib="Vortex_FcsCore"),
 }
 
@@ -79,6 +79,7 @@ TODO = [
     ("bench/sim/Airframe.cs", r"gameObject\.name ==|ifrit =|revoker =|su30|ternion|compass|vortex", "Bench airframe flags keyed to the source jet's root name."),
     ("bench.sh", r"BENCH_DATA", "Bench airframe JSON path: point it at YOUR extracted airframe (README section 9)."),
     ("{P}/FcsNative.cs", r"public const string Lib|public const int Abi|ABI", "Native core: library name (renamed by this tool) and ABI number. Any change to the allocator, the grid kernels or the coupled-check LP must be made in native/fcs_core/src as well, expression for expression, with an ABI bump (README section 2.18)."),
+    (".github/workflows/native-core.yml", r"attestation verify|-R ", "Vortex lineage: reproducible native-core CI (builds the core twice, attests it, checks native/prebuilt). It only runs from a repository root; set your repository in the verify line. After changing the Rust code, rebuild with native/build-repro.sh and commit native/prebuilt/<Lib>.dll (README section 15.3)."),
     ("{P}/CoupledCap.cs", r"Reserve|FindTop|CplBetaDesign", "Coupled asymmetric-load check: the reserve share (AsymCoupledReserveMax) is per jet; check the demand curve's shape before choosing the edge rule (README section 8)."),
     ("{P}/FcsController.cs", r"ReversedFlowNoseAxis|LatAxisAlpha", "Reversed-flow (flying backwards) roll axis: |cos AoA| mirror. Keep."),
     ("{P}/Hooks.cs", r"GearPrefix|GroundIndiBrake|GsPedalBrake", "Ground steering with the main brakes: read YOUR gear's braking, differentialBrakeFactor and track (README section 8)."),
@@ -145,7 +146,7 @@ def main():
     if S.get("lib") and new_lib != S["lib"]:
         for root, dirs, files in os.walk(dst):
             for f in files:
-                if f.endswith((".cs", ".sh", ".toml", ".cfg", ".py", ".md")):
+                if f.endswith((".cs", ".sh", ".toml", ".cfg", ".py", ".md", ".yml", ".yaml")):
                     sub_file(os.path.join(root, f), [(S["lib"], new_lib)])
         pb = os.path.join(dst, "native", "prebuilt")
         if os.path.exists(os.path.join(pb, S["lib"] + ".dll")):

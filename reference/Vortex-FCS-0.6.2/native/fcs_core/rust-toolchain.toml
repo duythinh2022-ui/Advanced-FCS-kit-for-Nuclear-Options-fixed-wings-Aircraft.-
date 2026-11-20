@@ -1,0 +1,7 @@
+# The exact compiler the shipped Vortex_FcsCore.dll is built with. rustup reads this file and installs this version and the
+# Windows target automatically the first time cargo runs in this folder. Changing it changes the DLL's bytes: rebuild with
+# native/build-repro.sh and commit the new native/prebuilt/Vortex_FcsCore.dll (CI checks the two match).
+[toolchain]
+channel = "1.97.0"
+targets = ["x86_64-pc-windows-gnu"]
+profile = "minimal"

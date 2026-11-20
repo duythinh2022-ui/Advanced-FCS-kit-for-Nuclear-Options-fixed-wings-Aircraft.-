@@ -1,0 +1,67 @@
+# Builds the native core (native/fcs_core, Rust) from this commit's source in a pinned environment, proves the build is
+# reproducible (two builds in different folders must give the same bytes), publishes a signed build-provenance attestation
+# for the DLL, and checks that the committed native/prebuilt/Vortex_FcsCore.dll (the one embedded in the plugin) is
+# byte-identical to it.
+#
+# To check a Vortex_FcsCore.dll you have (extracted from Vortex_FS20_FCS.dll, or from BepInEx\cache\Vortex_FcsCore\):
+#   gh attestation verify Vortex_FcsCore.dll -R duythinh2022-ui/Advanced-Flight-Controls-System-for-FS-20-Vortex-Nuclear-Option
+name: native-core
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    container: rust:1.97.0-bookworm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Linker (mingw-w64 from Debian bookworm)
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq gcc-mingw-w64-x86-64 >/dev/null
+          x86_64-w64-mingw32-gcc --version | head -1
+          x86_64-w64-mingw32-ld --version | head -1
+
+      - name: Build
+        run: bash native/build-repro.sh
+
+      - name: Build again in another folder (reproducibility)
+        run: |
+          mkdir -p /tmp/second/elsewhere
+          cp -r native /tmp/second/elsewhere/
+          rm -rf /tmp/second/elsewhere/native/fcs_core/target
+          bash /tmp/second/elsewhere/native/build-repro.sh
+          a=$(sha256sum native/fcs_core/target/x86_64-pc-windows-gnu/release/Vortex_FcsCore.dll | cut -d' ' -f1)
+          b=$(sha256sum /tmp/second/elsewhere/native/fcs_core/target/x86_64-pc-windows-gnu/release/Vortex_FcsCore.dll | cut -d' ' -f1)
+          echo "first build:  $a"
+          echo "second build: $b"
+          test "$a" = "$b"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: native/fcs_core/target/x86_64-pc-windows-gnu/release/Vortex_FcsCore.dll
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Vortex_FcsCore-${{ github.sha }}
+          path: native/fcs_core/target/x86_64-pc-windows-gnu/release/Vortex_FcsCore.dll
+
+      - name: Committed prebuilt == this build
+        run: |
+          a=$(sha256sum native/fcs_core/target/x86_64-pc-windows-gnu/release/Vortex_FcsCore.dll | cut -d' ' -f1)
+          b=$(sha256sum native/prebuilt/Vortex_FcsCore.dll | cut -d' ' -f1)
+          echo "built:     $a"
+          echo "committed: $b"
+          if [ "$a" != "$b" ]; then
+            echo "::error::native/prebuilt/Vortex_FcsCore.dll is not the build of this commit's source. Commit this run's artifact as native/prebuilt/Vortex_FcsCore.dll."
+            exit 1
+          fi

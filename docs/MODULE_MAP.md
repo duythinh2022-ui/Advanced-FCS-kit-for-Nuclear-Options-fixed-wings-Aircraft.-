@@ -18,13 +18,13 @@ Line count of each file on each jet (— = the file does not exist on that jet).
 | LAW | `CapacityEstimator.cs` | 290 | 392 | 371 | 371 | 371 | 361 | 371 | Per-axis, per-side angular-acceleration capacity (measured + committed + allocator probe). The governor's only input about what the jet can still do. |
 | LAW | `CoupledCap.cs` | 555 | 555 | 555 | 555 | 555 | 555 | 555 | Coupled asymmetric-load check (Ternion 0.2.2, all six since 12 Nov): per sweep AoA a small LP over every effector's moment points gives the flight-path roll left each way with the load, pitch held and no sideslip acceleration; the AoA cap sits where the weaker side falls to AsymCoupledReserveMax of the roll range (FindTop = the lower edge of the top over-threshold stretch). Off by default on the F-22E. |
 | LAW | `EstimatorJob.cs` | 139 | 139 | 139 | 139 | 139 | 139 | 139 | Threading (F-22E 3.0.4): runs the capacity estimator's allocator probes on a pool thread, on mirrored effectors and allocator; joined at the top of the next tick (the laws already read the previous tick's estimate). |
-| LAW | `FcsController.cs` | 10017 | 11384 | 11597 | 11939 | 12257 | 13724 | 12654 | The whole flight control computer: air data, modes, pitch law, lateral law, reference-capacity governor, push plan, limits (asym/low-thrust/fin-loss/engine-out), INDI, allocator calls, ground steering, VMC, telemetry. Per-jet. |
+| LAW | `FcsController.cs` | 10017 | 11384 | 11597 | 11939 | 12257 | 13724 | 12816 | The whole flight control computer: air data, modes, pitch law, lateral law, reference-capacity governor, push plan, limits (asym/low-thrust/fin-loss/engine-out), INDI, allocator calls, ground steering, VMC, telemetry. Per-jet. |
 | LAW | `FcsMode.cs` | 13 | 13 | 13 | 13 | 13 | 13 | 13 | Mode enum: Off, Ground, GearDownRate, AoAG, MPO, AIRate, Rate. |
 | LAW | `Lpf.cs` | 21 | 21 | 21 | 21 | 21 | 21 | 21 | First-order low-pass filter (scalar). |
 | LAW | `Lpf3.cs` | 23 | 23 | 23 | 23 | 23 | 23 | 23 | First-order low-pass filter (Vector3). |
 | LAW | `ParallelFcs.cs` | 327 | 327 | 327 | 327 | 327 | 327 | 327 | Threading (F-22E 3.1.0): the shared pool rules (FcsPool.Helpers = 1-3 helpers per jet), Claimable jobs the main thread can run inline, IndexFork fork-join, EffectorMirror copies. |
 | LAW | `RateTraj.cs` | 79 | 42 | 42 | 42 | 42 | 42 | 42 | Acceleration- and jerk-limited trajectory toward a target (command shaping of the pitch-rate target). |
-| LAW | `Stovl.cs` | — | — | — | — | — | — | 4221 | Vortex: the F-35B-style STOVL laws - conversion on Flight Assist, translational-rate command in the hover, throttle as speed / ground-speed command with a zero-ground-speed detent, ship-relative hover, the lift-fan / roll-post / swivel-nozzle effector models fed to the same allocator. |
+| LAW | `Stovl.cs` | — | — | — | — | — | — | 5179 | Vortex: the F-35B-style STOVL laws - conversion on Flight Assist, translational-rate command in the hover, throttle as speed / ground-speed command with a zero-ground-speed detent, ship-relative hover, the lift-fan / roll-post / swivel-nozzle effector models fed to the same allocator. |
 | MODEL | `AirfoilTable.cs` | 93 | 134 | 134 | 134 | 134 | 134 | 134 | Lookup table of an airfoil's CL/CD vs AoA as the game samples it; knee / peak helpers. |
 | MODEL | `CantedTvc.cs` | — | — | — | — | — | 163 | — | Su-30: the AL-31FP single-axis nozzles canted 32 deg outboard. Each nozzle is one effector axis; symmetric = pitch, differential = proverse roll + yaw. |
 | MODEL | `Effector.cs` | 229 | 184 | 269 | 269 | 269 | 269 | 269 | Abstract effector: travel, servo rate, costs, moment table M[grid] (roll, pitch, yaw), live-node anchoring, pair/fight groups. |
@@ -53,23 +53,24 @@ Line count of each file on each jet (— = the file does not exist on that jet).
 | GLUE | `Acc.cs` | 297 | 329 | 329 | 329 | 329 | 335 | 336 | Accessors: reflection/AccessTools field refs into the game's private fields (ControlSurface, AeroPart, Turbojet, jobs...). |
 | GLUE | `FcsApi.cs` | 44 | 44 | 70 | 70 | 70 | 70 | 116 | Public discovery API for HUD / visualizer tools (ApiId duythinh2022.fcs). |
 | GLUE | `FcsNative.cs` | 1028 | 1055 | 1045 | 1045 | 1049 | 1045 | 1045 | Native (Rust) core wrapper (F-22E 4.0.0+, all six): DllImport of <Jet>_FcsCore (allocator solve, grid kernels, coupled-check LP), ABI check, load-time self-tests against C# twins, extraction of the embedded core to BepInEx/cache/<Lib>/<sha>/, C# fallback. |
-| GLUE | `FcsStandalonePlugin.cs` | 126 | 125 | 125 | 125 | 125 | 125 | 246 | The BepInEx plugin class (GUID, version, Awake). |
+| GLUE | `FcsStandalonePlugin.cs` | 126 | 125 | 125 | 125 | 125 | 125 | 281 | The BepInEx plugin class (GUID, version, Awake). |
 | GLUE | `Hooks.cs` | 538 | 526 | 712 | 712 | 712 | 784 | 723 | Harmony patch bodies: ControlsFilter.Filter (the FCS tick), ControlSurface write-back, TVC transpilers, gear steering, flaps, airbrake, AI auto-aim. |
 | GLUE | `MpPolicy.cs` | 370 | 370 | 370 | 370 | 370 | 370 | 370 | Multiplayer host policy: FCS only if the host runs it and allows it (HostAllowFcs), host-locked variant (HostLockVariant). |
 | GLUE | `Names.cs` | — | — | — | — | — | 52 | — | Su-30: maps the blueprint's L/R-prefixed part names (LCanard_struct, Left_stab_struct...) onto the lineage's _L/_R suffix scheme. |
-| GLUE | `Plugin.cs` | 2437 | 2417 | 2784 | 2877 | 3032 | 3591 | 3611 | All config keys (player + Dev file), migrations, Harmony installation. |
+| GLUE | `Plugin.cs` | 2437 | 2417 | 2784 | 2877 | 3032 | 3591 | 3711 | All config keys (player + Dev file), migrations, Harmony installation. |
 | GLUE | `Registry.cs` | 589 | 512 | 540 | 617 | 647 | 901 | 556 | Which aircraft get the FCS (IsF22 = aircraft match), one-time airframe setup, controller lifetime, surface ownership. |
 | GLUE | `StovlHooks.cs` | — | — | — | — | — | — | 374 | Vortex: game-side hooks of the STOVL laws - takes the SwivelDuctSystem's swivel command and the lift system's pitch/roll/yaw inputs from the allocator, and the engine throttle from the STOVL laws, while the FCS owns the lift system. |
 | GLUE | `StructureFix.cs` | — | — | — | — | 139 | — | — | Ternion: re-homes a part whose transform parent is an engine but which is jointed to the airframe, so a destroyed engine no longer takes the tail with it. |
 | GLUE | `SwivelLink.cs` | — | — | — | — | — | — | 562 | Vortex: reflection reader/writer for the game's SwivelDuctSystem (bearings, thrusters, lift fan, doors) and, since 0.5.0, the lift-fan vane box's thrust-line turning. |
 | GLUE | `Telemetry.cs` | 136 | 136 | 136 | 136 | 136 | 136 | 136 | CSV flight log writer (BepInEx/<Jet>_FCS_<date>_<time>.csv); since 3.0.4 the rows go to a background writer thread. |
 | GLUE | `TelemetryRow.cs` | 55 | 77 | 77 | 77 | 77 | 58 | 77 | One CSV row captured as format strings + boxed values on the main thread, formatted and written by the background writer thread (F-22E 3.0.4). |
-| GLUE | `ThrottleDetent.cs` | — | — | — | — | — | — | 689 | Vortex: hold detent at the STOVL zero-ground-speed throttle for keyboard/button throttles (as baanish's Detents mod). |
+| GLUE | `ThrottleDetent.cs` | — | — | — | — | — | — | 720 | Vortex: hold detent at the STOVL zero-ground-speed throttle for keyboard/button throttles (as baanish's Detents mod). |
 | GLUE | `TickStats.cs` | 367 | 367 | 367 | 367 | 367 | 367 | 367 | Per-phase tick timer (TickTimerLog): mean / median / p95 / max per tick, written to LogOutput.log every 10 s. |
+| EXTRA | `CautionBox.cs` | — | — | — | — | — | — | 584 | Vortex: persistent HUD caution lines in a copy of the game's message box, held for as long as the condition lasts (no overlap). |
 | EXTRA | `Countermeasures.cs` | 226 | 226 | 226 | 226 | 226 | 226 | 226 | Flare / gun-ammo / EW capacity scaling per performance profile (gameplay). |
 | EXTRA | `DragRelief.cs` | 250 | 280 | 280 | 280 | 280 | 280 | 280 | Performance profile: low-AoA drag relief / transonic relief (gameplay buff). |
 | EXTRA | `HudShipMatch.cs` | — | — | — | — | — | — | 101 | Vortex: shows the game's auto-hover 'H' icon while the STOVL laws hover on a ship's speed (flashing while blending). |
-| EXTRA | `HudThrottle.cs` | — | — | — | — | — | — | 125 | Vortex: the throttle gauge reads what the STOVL lever commands (0 GS, +12 KT, HOLD SPD...) and marks the zero-ground-speed detent. |
+| EXTRA | `HudThrottle.cs` | — | — | — | — | — | — | 226 | Vortex: the throttle gauge reads what the STOVL lever commands (0 GS, +12 KT, HOLD SPD...) and marks the zero-ground-speed detent. |
 | EXTRA | `NozzleKinematics.cs` | 139 | — | — | — | — | — | — | F-22E only: nozzle petal kinematics for the cosmetic rig. |
 | EXTRA | `NozzleMeshData.cs` | 22 | — | — | — | — | — | — | F-22E only: generated split nozzle mesh (derived from Aryx's mesh). |
 | EXTRA | `NozzleRig.cs` | 565 | — | — | — | — | — | — | F-22E only: cosmetic re-rig of Aryx's nozzle blades (hinged petals). |
@@ -91,7 +92,7 @@ whose column is smallest for the files you care about.
 | LAW | `CapacityEstimator.cs` | 460 | 23 | identical | identical | 22 | identical |
 | LAW | `CoupledCap.cs` | identical | identical | identical | identical | identical | identical |
 | LAW | `EstimatorJob.cs` | identical | identical | identical | identical | identical | identical |
-| LAW | `FcsController.cs` | 2805 | 1903 | 558 | 594 | 2553 | 1201 |
+| LAW | `FcsController.cs` | 2805 | 1903 | 558 | 594 | 2553 | 1369 |
 | LAW | `FcsMode.cs` | identical | identical | identical | identical | identical | identical |
 | LAW | `Lpf.cs` | identical | identical | identical | identical | identical | identical |
 | LAW | `Lpf3.cs` | identical | identical | identical | identical | identical | identical |
@@ -126,11 +127,11 @@ whose column is smallest for the files you care about.
 | GLUE | `Acc.cs` | 150 | 2 | 2 | 62 | 68 | 7 |
 | GLUE | `FcsApi.cs` | identical | 28 | 4 | 4 | 4 | 52 |
 | GLUE | `FcsNative.cs` | 129 | 86 | 76 | 82 | 84 | 24 |
-| GLUE | `FcsStandalonePlugin.cs` | 17 | 10 | 14 | 12 | 14 | 133 |
+| GLUE | `FcsStandalonePlugin.cs` | 17 | 10 | 14 | 12 | 14 | 168 |
 | GLUE | `Hooks.cs` | 160 | 250 | 10 | 26 | 98 | 17 |
 | GLUE | `MpPolicy.cs` | 2 | identical | identical | identical | identical | identical |
 | GLUE | `Names.cs` | — | — | — | — | — | — |
-| GLUE | `Plugin.cs` | 1416 | 759 | 299 | 347 | 983 | 1047 |
+| GLUE | `Plugin.cs` | 1416 | 759 | 299 | 347 | 983 | 1147 |
 | GLUE | `Registry.cs` | 189 | 70 | 127 | 82 | 318 | 62 |
 | GLUE | `StovlHooks.cs` | — | — | — | — | — | — |
 | GLUE | `StructureFix.cs` | — | — | — | — | — | — |
@@ -139,6 +140,7 @@ whose column is smallest for the files you care about.
 | GLUE | `TelemetryRow.cs` | 28 | identical | identical | identical | 31 | identical |
 | GLUE | `ThrottleDetent.cs` | — | — | — | — | — | — |
 | GLUE | `TickStats.cs` | 24 | 24 | 24 | 24 | 24 | 20 |
+| EXTRA | `CautionBox.cs` | — | — | — | — | — | — |
 | EXTRA | `Countermeasures.cs` | 4 | 4 | 4 | 4 | 4 | 4 |
 | EXTRA | `DragRelief.cs` | 44 | 2 | 2 | 2 | 2 | 2 |
 | EXTRA | `HudShipMatch.cs` | — | — | — | — | — | — |

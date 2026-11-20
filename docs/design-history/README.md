@@ -18,7 +18,7 @@ at the time, versions and line numbers have moved on, and "installed / not flown
 
 - `FCS_asym_unification_result_2026-11-17.md` (17 Nov 2026): the asymmetric-load code made one shared file on all seven jets:
   how it is built, the per-jet settings, every bench difference old vs new and why four jets moved (README §2.19, §19.15).
-- `reference/Vortex-FCS-0.5.10/release-notes/Vortex_STOVL_authority_TRC_plan.md` and `..._phase0_results.md` (17 Nov 2026): the
+- `reference/Vortex-FCS-0.6.2/release-notes/Vortex_STOVL_authority_TRC_plan.md` and `..._phase0_results.md` (17 Nov 2026): the
   plan for replacing the Vortex STOVL laws' fixed gains and schedules with authority- and physics-based ones, and its first
   measurements (README §8.27).
 
