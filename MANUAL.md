@@ -3636,8 +3636,11 @@ The outer loops are simple: the wanted acceleration comes from the rate error, e
 INDI gives a wanted moment $\mathbf m$ (three numbers). The jet has 6–14 effectors. **Allocation** picks their positions
 $\mathbf u$:
 
-$$\min_{\mathbf u}\;\big\lVert W\,\big(B(\mathbf u) - \mathbf m\big)\big\rVert^2 + \text{costs}(\mathbf u)
-\quad\text{subject to}\quad \max(u_\text{min},\,u_\text{now} - \dot u_\text{max}\Delta t) \le \mathbf u \le \min(u_\text{max},\,u_\text{now} + \dot u_\text{max}\Delta t)$$
+$$\min_{\mathbf u}\;\big\lVert W\,\big(B(\mathbf u) - \mathbf m\big)\big\rVert^2 + \text{costs}(\mathbf u)$$
+
+subject to
+
+$$\max(u_\text{min},\,u_\text{now} - \dot u_\text{max}\Delta t) \le \mathbf u \le \min(u_\text{max},\,u_\text{now} + \dot u_\text{max}\Delta t)$$
 
 - $B(\mathbf u)$: the moment the effectors make at positions $\mathbf u$ (nonlinear: surfaces stall, reverse, interact).
 - $W$: axis weights (which axis wins when not everything is reachable: here pitch and sideslip outrank roll).

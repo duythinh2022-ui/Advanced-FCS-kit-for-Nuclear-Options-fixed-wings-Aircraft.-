@@ -25,7 +25,15 @@ intro_html = subprocess.run(["pandoc", "-f", "gfm", "-t", "html5", "--mathml", "
 # diagrams (box-drawing characters) keep their columns; everything else may wrap
 def mark_pre(m):
     block = m.group(0)
-    return block.replace("<pre", '<pre class="diagram"', 1) if re.search('[─│┌└├▶◀]', block) else block
+    if not re.search('[─│┌└├▶◀]', block):
+        return block
+    # kit 5.0: a diagram can't wrap, so its font shrinks until its longest line fits the 178 mm column (was a fixed 6.55 pt
+    # with overflow hidden, which cut the right edge off the longer diagrams). Mono advance 0.602 em; 19 pt of padding + border.
+    import html as _h
+    text = _h.unescape(re.sub(r"<[^>]+>", "", block))
+    cols = max((len(l) for l in text.split("\n")), default=1)
+    pt = min(6.55, (504.6 - 19) / (cols * 0.602) * 0.98)
+    return block.replace("<pre", f'<pre class="diagram" style="font-size:{pt:.2f}pt"', 1)
 body = re.sub(r'<pre[^>]*>.*?</pre>', mark_pre, body, flags=re.S)
 # part headings (h1) become divider pages
 body = re.sub(r'<h1 id="([^"]+)">Part ([IVX]+) · (.+?)</h1>',
@@ -71,7 +79,8 @@ h2#contents { break-before: auto; margin-top: 16pt; }
 h3 { font-size: 12.5pt; margin: 16pt 0 6pt; }
 h4 { font-size: 10.5pt; margin: 12pt 0 4pt; }
 p { margin: 0 0 6pt; orphans: 3; widows: 3; }
-ul, ol { margin: 0 0 7pt; padding-left: 16pt; }
+ul { margin: 0 0 7pt; padding-left: 16pt; }
+ol { margin: 0 0 7pt; padding-left: 24pt; }   /* kit 5.0: room for two-digit numbers (16 pt cut the 1 off 12.) */
 li { margin: 1.5pt 0; }
 li > p { margin: 0; }
 strong { color: #0f2747; }
@@ -121,6 +130,40 @@ with sync_playwright() as p:
     pg = b.new_page()
     pg.goto("file://" + os.path.abspath(tmp))
     pg.wait_for_timeout(300)
+    # kit 5.0: clipping check. Lay the page out at the printed text width (A4 210 mm - 2 x 16 mm margins = 178 mm) and list
+    # everything that sticks out of the text column, hides an overflow, or would make Chromium shrink the whole PDF.
+    pg.emulate_media(media="print")
+    pg.set_viewport_size({"width": 673, "height": 1000})
+    pg.wait_for_timeout(200)
+    bad = pg.evaluate("""() => {
+      const W = document.body.clientWidth, out = [];
+      const name = e => { let h = e; while (h && !/^H[1-4]$/.test(h.tagName)) h = h.previousElementSibling || h.parentElement;
+                          return (h && h.textContent || '').trim().slice(0, 60); };
+      if (document.documentElement.scrollWidth > W + 1) out.push(['page', 'document ' + document.documentElement.scrollWidth + ' px wide > ' + W, '']);
+      for (const e of document.querySelectorAll('body *')) {
+        const r = e.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (r.left < -0.5 || r.right > W + 0.5) out.push([e.tagName, 'sticks out ' + Math.round(Math.min(r.left, 0)) + '..' + Math.round(r.right - W) + ' px', name(e)]);
+        if (e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflowX !== 'visible') out.push([e.tagName, 'hides ' + (e.scrollWidth - e.clientWidth) + ' px of overflow', name(e)]);
+      }
+      // list markers sit outside the li: check the marker room
+      for (const ol of document.querySelectorAll('ol')) {
+        const n = ol.children.length + (parseInt(ol.getAttribute('start') || '1') - 1);
+        const pad = parseFloat(getComputedStyle(ol).paddingLeft);
+        const need = (String(n).length + 1) * 6.6 + 6;   // digits + '.' at ~6 px each at 9.6 pt, plus the marker gap
+        if (pad < need) out.push(['OL', 'numbers up to ' + n + ' need ~' + Math.round(need) + ' px, padding ' + Math.round(pad), name(ol)]);
+      }
+      return out;
+    }""")
+    seen = set()
+    for tag, what, where in bad:
+        k = (tag, what.split(' px')[0], where)
+        if k in seen:
+            continue
+        seen.add(k)
+        print(f"CLIP {tag:6s} {what:45s} under: {where}")
+    print("clipping check:", "nothing sticks out" if not bad else f"{len(seen)} problems")
+    pg.emulate_media(media="screen")
     pg.pdf(path=OUT, format="A4", print_background=True, display_header_footer=True,
            header_template="<div></div>", footer_template=foot,
            margin={"top": "16mm", "bottom": "18mm", "left": "16mm", "right": "16mm"})
