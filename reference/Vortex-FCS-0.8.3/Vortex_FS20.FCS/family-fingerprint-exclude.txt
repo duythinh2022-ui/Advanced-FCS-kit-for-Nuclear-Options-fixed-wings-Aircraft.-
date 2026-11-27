@@ -1,0 +1,9 @@
+# Vortex 0.7.1: source files (relative to this folder) that never act on a FS-20 Vortex Family jet (A / C / T / NA), left out of
+# FcsBuildInfo.FamilyFingerprint. A FS-20 Vortex FCS that changed only these still matches a Family FCS and flies the family jets.
+# Keep this list the same in both builds (it is part of the shared source). Nothing yet: every file can run on a family jet.
+# 0.7.2: for B-only code inside a shared file, wrap it instead:
+#     // FAMILY-FP EXCLUDE BEGIN
+#     ... code that only ever runs on the stock B (guard it, e.g. FamilyCompat.VariantOf(a) == FamilyCompat.Variant.B) ...
+#     // FAMILY-FP EXCLUDE END
+# Marker lines and everything between them are left out of the fingerprint. Not nested; an unbalanced marker stops the build.
+# Nothing checks that the marked code never runs on a family jet.

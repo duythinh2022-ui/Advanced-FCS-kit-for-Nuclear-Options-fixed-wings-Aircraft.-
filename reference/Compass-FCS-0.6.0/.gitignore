@@ -1,9 +1,0 @@
-bin/
-obj/
-*.dll
-*.pdb
-*.bak
-*.zip
-
-# keep the prebuilt native core (embedded into the plugin by build.sh)
-!native/prebuilt/*.dll

@@ -7,3 +7,9 @@ __pycache__/
 *.pyc
 # the kit's prebuilt native cores ARE part of the source: keep them
 !reference/*/native/prebuilt/*.dll
+# kit 5.0: fcs.py's per-machine settings and results
+fcs.local.json
+runs/
+ports/
+# the benches' synced FCS copy (bench build makes it)
+reference/*/bench/fcs/

@@ -11,16 +11,22 @@ at the time, versions and line numbers have moved on, and "installed / not flown
 - `F22E_airframe_X2_handoff_2026-11-09.md` (9 Nov 2026): the build hand-off for the F-22E's relaxed-to-neutral airframe X2
   (shipped as 3.2.0, refined as X2e in 3.2.1): Tom's goals, why the package as asked failed on the bench, the acceptance
   targets, the open items and the phase-2 roll work. Its study kit (bench patch, fitting scripts, configs, results) is in
-  `reference/F22E-FCS-4.5.1/studies/x2_study_kit/`, and the 3.2.0 acceptance scripts in `studies/x2_acceptance/`.
+  `reference/F22E-FCS-5.1.1/studies/x2_study_kit/`, and the 3.2.0 acceptance scripts in `studies/x2_acceptance/`.
 
-- `reference/F22E-FCS-4.5.1/studies/Loaded_reversal_port_handoff_2026-11-10.md` and `F22E_loaded_reversal_4.1.0_to_4.1.2.diff` (10 Nov 2026): the F-22E 4.1.1 + 4.1.2 loaded roll-reversal fix,
+- `reference/F22E-FCS-5.1.1/studies/Loaded_reversal_port_handoff_2026-11-10.md` and `F22E_loaded_reversal_4.1.0_to_4.1.2.diff` (10 Nov 2026): the F-22E 4.1.1 + 4.1.2 loaded roll-reversal fix,
   how it was ported to the other five jets, with the diff (README §8.25).
 
-- `FCS_asym_unification_result_2026-11-17.md` (17 Nov 2026): the asymmetric-load code made one shared file on all seven jets:
+- `FCS_asym_unification_result_2026-11-17.md` (17 Nov 2026): the asymmetric-load code made one shared file on all seven jets of the time:
   how it is built, the per-jet settings, every bench difference old vs new and why four jets moved (README §2.19, §19.15).
-- `reference/Vortex-FCS-0.6.2/release-notes/Vortex_STOVL_authority_TRC_plan.md` and `..._phase0_results.md` (17 Nov 2026): the
+- `reference/Vortex-FCS-0.8.3/release-notes/Vortex_STOVL_authority_TRC_plan.md` and `..._phase0_results.md` (17 Nov 2026): the
   plan for replacing the Vortex STOVL laws' fixed gains and schedules with authority- and physics-based ones, and its first
   measurements (README §8.27).
+
+- `F35_footage_aero_read_vs_F22E_airframe_2026-11-25.md` (25 Nov 2026): what real F-35 demo footage says about a coplanar tail
+  (near-neutral stabs in turns, the unstable band, the post-stall plate, nose-down needed), and why the earlier F-22E airframes
+  missed it. The physics behind README §24.11.
+- `F22E_4.8.2_static_margin_2026-11-25.md` (25 Nov 2026): the static-margin method and the X2e / first two-zone numbers that
+  README §24.11 compares against.
 
 The 10–12 Nov hand-offs for the performance port, the coupled asymmetric-load check and the ground brakes are not copied;
 their content is in README §2.18, §8.23, §8.26, §10.8 and §19.8–19.14.

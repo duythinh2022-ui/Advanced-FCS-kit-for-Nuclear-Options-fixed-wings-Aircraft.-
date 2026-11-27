@@ -8,47 +8,62 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
 
 ## 1. Orientation (read once)
 
-- Seven complete reference FCS plugins live in `reference/`, forked in this order (each from the one before; the Vortex was
-  cloned from the Revoker):
-  - `F22E-FCS-4.5.1/Aryx_F22E_StrikeRaptor.FCS/`: modded F-22E, rudders, stabs, flaperons, pitch-only TVC, engine class `Turbofan`;
-    relaxed-to-neutral airframe X2e (README §8.15); `studies/` holds the airframe study kit, push scoring and the
-    loaded-reversal hand-off (excluded from the build).
-  - `Ifrit-FCS-1.5.0/Ifrit_KR67.FCS/`: stock KR-67, canted tails = pitch + yaw (no rudders), split decelerons, pitch + roll TVC, `Turbojet`.
-  - `Revoker-FCS-1.5.0/Revoker_FS12.FCS/`: stock FS-12, canards (classified `Stabilator`), one rudder, delta elevons (outer
-    `ControlSurface`, inner `HingeFlapEffector`), pitch + yaw TVC, `Turbojet`.
-  - `Compass-FCS-0.6.0/Compass_TA30.FCS/`: stock T/A-30 trainer, tail slabs, strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin.
-  - `Ternion-FCS-0.4.2/Ternion_FS3.FCS/`: Blueprinter FS-3, canards **and** aft elevators (two `Stabilator` pairs, `isCanard`),
+- **Start with `python fcs.py`** (kit 5.0, README §4.0): it builds plugins (split by default), builds and flies the benches
+  with named presets and a plain-English readout, replays logs, runs / compares suites, clones (`fcs.py new`) and checks the
+  shared files (`fcs.py check`). The tree scripts underneath still work and are described below.
+- Eight complete reference FCS plugins live in `reference/`, forked in this order (each from the one before; the Vortex and
+  the J-20B were cloned from the Revoker):
+  - `F22E-FCS-5.1.1/Aryx_F22E_StrikeRaptor.FCS/`: modded F-22E, rudders, stabs, flaperons, slats, pitch-only TVC, engine class
+    `Turbofan`; the **two-zone coplanar-stab airframe** (`TwoZoneAirframe`, README §24.11; `false` = X2e, §8.15) and the
+    **horizon-objective allocator** (5.1.x); `studies/` (excluded from the build); `tools/battery/` (the 5.x batteries).
+  - `Ifrit-FCS-1.8.3/Ifrit_KR67.FCS/`: stock KR-67, canted tails = pitch + yaw (no rudders), split decelerons, pitch + roll TVC,
+    `Turbojet`; also a canard law for the Multirole MTD variant.
+  - `Revoker-FCS-1.8.6/Revoker_FS12.FCS/`: stock FS-12, canards (classified `Stabilator`), one rudder, delta elevons (outer
+    `ControlSurface`, inner `HingeFlapEffector`), pitch + yaw TVC, `Turbojet`; poses the EF-2000 Typhoon mod's panels (render only).
+  - `Compass-FCS-0.7.3/Compass_TA30.FCS/`: stock T/A-30 trainer, tail slabs, strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin.
+  - `Ternion-FCS-0.5.1/Ternion_FS3.FCS/`: Blueprinter FS-3, canards **and** aft elevators (two `Stabilator` pairs, `isCanard`),
     twin rudders, no TVC; `StructureFix`, engine-out zero-thrust match, spin recovery.
-  - `Su30-FCS-0.6.5/Su30_VXN.FCS/`: kyleisred's Blueprinter Su-30VXN, canards (pitch-only) + stabs + rudders, canted single-axis
+  - `Su30-FCS-0.7.3/Su30_VXN.FCS/`: kyleisred's Blueprinter Su-30VXN, canards (pitch-only) + stabs + rudders, canted single-axis
     nozzles (`CantedTvc`), `ThrustLineAtCg`, low-speed TVC roll, measured AoA/g capture, soft AoA limit.
-  - `Vortex-FCS-0.6.2/Vortex_FS20.FCS/`: stock FS-20, delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**
+  - `J20B-FCS-0.2.9/J20B_Weilong.FCS/`: Reasonix's J-20B mod, which moves its surfaces with its own `Reasonix.J20.AeroControl`
+    (no game `ControlSurface`s): `J20Bridge` drives the mod's hinges from the FCS tick and writes the pose back after the mod's
+    step. Canards (pitch-only by default), elevons, all-moving fins, no TVC; core `J20B_FcsCore` = the Revoker's, renamed.
+  - `Vortex-FCS-0.8.3/Vortex_FS20.FCS/`: stock FS-20, delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**
     (README §8.27): lift fan, roll posts, three-bearing swivel nozzle and lift-fan vane box as allocator effectors (`Stovl.cs`,
     game side `SwivelLink.cs` / `StovlHooks.cs`), F-35B-style unified laws, conversion on Flight Assist; since 0.6.x a speed floor
     and LOW HVR T/W cautions (engine damage counted), yaw-pivot hover, one shared thrust budget, `CautionBox.cs`, and the
-    reproducible, attested native core (`native/build-repro.sh`, `rust-toolchain.toml`, `.github/workflows/native-core.yml`).
+    reproducible, attested native core (`native/build-repro.sh`, `rust-toolchain.toml`, `.github/workflows/native-core.yml`);
+    since 0.6.7 one learned aero model for the STOVL laws; since 0.7.x the **Vortex Family FCS** from the same source
+    (`build-family.sh`, `-define:FAMILY_FCS`, `FamilyCompat`, `GeomGate`, the fingerprint `tools/gen_buildinfo.py` with
+    `// FAMILY-FP EXCLUDE BEGIN/END` for B-only code: regenerate it, never edit `FcsBuildInfo.cs`).
 - **What changed since kit 1 (5 Nov) is README §19**, one entry per problem: §19.1–19.7 up to kit 2.0 (push-overs, the F-22E
   airframe, threading, fuel, no-TVC jets), §19.8–19.14 up to kit 3.0 (native core, coupled asymmetric-load check, loaded
   reversals, flying backwards, ground brakes, Su-30 0.2.4–0.6.0), §19.15–19.22 up to kit 4.0 (shared asymmetric-load code,
-  engine-out zero-thrust match and recovery thrust, the Vortex), §19.23 kit 4.1 (Vortex 0.5.11–0.6.2). Read the relevant part before touching any of those.
-- **The asymmetric-load system is one shared file** (`AsymShared.cs` + `AsymCap.cs` + `CoupledCap.cs`, README §2.19): the same
-  text on every jet but the namespace line; per-jet behaviour only through `Plugin` settings. Check with
-  `tools/asym_shared/checkshared.py`. Revoker 1.5.0 carries the first shared text (inert on a single-engine jet);
-  copy `AsymShared.cs` from one of the other six.
+  engine-out zero-thrust match and recovery thrust, the Vortex), §19.23 kit 4.1 (Vortex 0.5.11–0.6.2), §19.24 kit 5.0 (every jet
+  to 26 Nov, the J-20B, the split build). Read the relevant part before touching any of those.
+- **The asymmetric-load system is meant to be one shared file** (`AsymShared.cs` + `AsymCap.cs` + `CoupledCap.cs`, README §2.19):
+  the same text on every jet but the namespace line; per-jet behaviour only through `Plugin` settings. Check with
+  `python fcs.py check`. **Kit 5.0 state (README F45):** `AsymCap.cs` and `CoupledCap.cs` are identical on all eight, but
+  `AsymShared.cs` has drifted into five texts (Compass / Ternion / Su-30 / J-20B share one; F-22E, Ifrit, Revoker, Vortex each
+  their own). Don't copy one jet's text over another's without benching both; merge by moving each difference behind a setting.
 - **Every jet carries a native (Rust) core** `<Jet>_FcsCore` (`native/fcs_core/`, exports `f22e_fcs_` / `ifr_fcs_` / `rev_fcs_` /
   `cmp_fcs_` / `tern_fcs_` / `su30_fcs_`; the Vortex's `Vortex_FcsCore` keeps the Revoker's `rev_fcs_` exports): the allocator's solve, the surface-table grid kernels and the coupled check's LP.
-  It is embedded in the plugin DLL (`native/prebuilt/<Lib>.dll`), extracted to `BepInEx/cache/<Lib>/<sha16>/` and loaded by full
-  path; ABI number check and self-tests against the C# twins at load; C# fallback (README §2.18, `native/README.md`).
+  **Kit 5.0: shipped as a separate file by default** (`<Lib>.dll` beside the plugin DLL; NOMM lists the plain C# DLL). With
+  `UNIFIED=1` it is embedded (`native/prebuilt/<Lib>.dll` as a resource, extracted to `BepInEx/cache/<Lib>/<sha16>/`). The loader
+  tries embedded, then the loose file, then runs C#; ABI number check and self-tests against the C# twins at load (README §2.18,
+  §15.1, `native/README.md`).
 - Each tree = plugin source + `DevUnlock/` + `bench/` (offline 6-DOF sim that compiles the real FCS sources against stubs) +
   `build.sh` (real DLL) + `bench.sh` (bench front end) + `native/` (Rust core, prebuilt DLL, `verify/` game-runtime checks) +
   `release-notes/`.
-- The source in this kit rebuilds the shipped release DLLs byte for byte (README §17). Keep it that way unless a change is
-  intended.
+- The source in this kit is the releases' source; with `UNIFIED=1` it is meant to rebuild the shipped release DLLs byte for byte
+  (checked for every jet up to kit 4.1; kit 5.0 could not re-run it, README §17 — run `fcs.py build <jet> --unified --check
+  <release DLL>` before relying on it). Keep it that way unless a change is intended.
 - `docs/MODULE_MAP.md` gives every file a layer: LAW, MODEL, AERO, SYSTEM, GLUE, EXTRA, and how far each jet moved from its
-  parent. `docs/CONFIG_REFERENCE.md` lists all 619 config keys with the seven jets' defaults. Regenerate both with
+  parent. `docs/CONFIG_REFERENCE.md` lists all 722 config keys with the eight jets' defaults. Regenerate both with
   `tools/gen_*.py` after changing sources.
 - README Part IV: §21 is a control theory primer (AoA, static margin, PID limits, velocity-vector roll, INDI, allocation,
   capture); §22 the workflow every change went through and the tools; §23 the caveats of porting by hand; §24 airframe aerodynamics recommendations (margin, surfaces,
-  strakes, thrust line, ground). If a user is new to
+  strakes, thrust line, ground; §24.11 F-22-style coplanar stabs and their stability margin). If a user is new to
   flight control, point them to §21 before explaining code.
 - `NO-FCS-Kit-Manual.pdf` is built from `MANUAL.md` by `tools/build_manual_pdf.py` (pandoc + Playwright Chromium). Rebuild it
   whenever MANUAL.md changes, or the two will disagree. Never build it from the short `README.md`.
@@ -94,8 +109,8 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
 11. **Versioning:** law change → minor bump; fix / telemetry / cleanup → patch bump. Update `FcsStandalonePlugin.Version`.
 12. **Never overstate verification.** Report "compiled", "bench-only" or "flown", with numbers. Bench numbers are relative.
     The bench approximates the game and may not be accurate; the kit 3.1 releases (12 Nov) were flown and passed in game by the
-    author, the kit 4.0 releases (13–18 Nov) are bench-tested and their notes give their flight status, and where the bench and
-    the game disagree, the game is the reference (README §17).
+    author; later releases (kit 4.0–5.0, 13–26 Nov) give their own flight status in their notes (F-22E 5.1.1 was flown on 26 Nov,
+    most others are bench-tested only), and where the bench and the game disagree, the game is the reference (README §17).
 13. **Judge the response curve on every manoeuvre** (Tom, 6 Nov): instant response, smooth rate, no spike, hitch, sudden
     slow-down, chatter or hesitation. Run the curve-quality checks (F-22E `bench/an/curveq.py`, README §10.3) and look at the
     time histories, not only peaks.
@@ -128,6 +143,15 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
     `ResponderType` still use a one-time `TypeByName` (MANUAL F44); fix at each jet's next release.
 25. **A term added to a law goes into that law's rate command,** inside its AoA envelope and rate budget, never added after it
     (Vortex 0.5.23).
+26. **Shared logic stays shared** (Tom, 17 Nov): one text on every jet; a per-jet number for an airframe reason is a per-jet
+    setting, never a fork of the shared code (README F45).
+27. **Twitchy, jerky or hesitant effector motion is fixed in the laws** (Tom, 25 Nov): never slower actuators or more damping.
+28. **No extra latches, gates or added logic** (Tom, 25 Nov): fix at the source so the FCS just follows the command.
+29. **Acceptance of a targeted fix** (Tom, 26 Nov): replaying his flight log on the bench comes out the same as the previous
+    version everywhere except the problem cases; there the problem is gone and only the traded performance is worse; and the
+    result must not depend on the bench's CG / mass calibration (the FCS must absorb CG differences).
+30. **Ship two files** (kit 5.0): main C# DLL + `<Lib>.dll` beside it; the unified DLL is the optional build. Never make a
+    release that only works with the core present.
 
 
 ## 4. Procedures
@@ -136,7 +160,9 @@ truth for *what the code does*; this file is the truth for *how to work on it*. 
 1. `python3 tools/new_airframe.py --from <closest reference> --out <dir> --ns <Ns.FCS> --title ... --short ... --file-prefix ... --prefab ... --match ...`
    Pick: rudders + stabs → f22e; no rudders / roll TVC / splits → ifrit; canards / delta / single fin / yaw TVC / hinged → revoker;
    no TVC, conventional tail, strakes → compass; two pitch pairs, Blueprinter jet, no-TVC twin engine-out → ternion; canted or
-   single-axis nozzles, thrust line off the CG → su30; STOVL / a lift system → vortex; unsure → revoker or a later fork. `--prefab` is optional (match by
+   single-axis nozzles, thrust line off the CG → su30; STOVL / a lift system → vortex; **coplanar stabs (F-22 / F-35 style) →
+   f22e** (README §24.11); a mod that moves its own surfaces → clone revoker and port the J-20B's `J20Bridge` pattern (the clone
+   tool does not take `--from j20b`); unsure → revoker or a later fork. `python fcs.py new` asks the questions. `--prefab` is optional (match by
    aircraftName only). Reset the source jet's `*Revision` migration keys in the clone.
 2. Open `<dir>/PORT_TODO.md`; work it top to bottom. Order: aircraft match → `Classify` → constructor effector list and minimum
    count → `Registry.EnsureSetup` (keep only intended airframe changes; fix the completeness check) → envelope defaults
@@ -177,12 +203,15 @@ someone else's mod (the F-22E, Ternion and Su-30 files are not in this kit).
 7. Release note: what, why, user quote, bench tables, status (compiled / bench-only / flown), install info.
 
 ### 4.5 Build the real DLL
-`NO_MANAGED=<game>/NuclearOption_Data/Managed NO_BEPINEX_CORE=<game>/BepInEx/core bash build.sh <srcdir> <AssemblyName>.dll`.
-The assembly name is taken from the output file name: use exactly the release name (`Aryx_F22E_StrikeRaptor_FCS.dll`,
-`Ifrit_KR67_FCS.dll`, `Revoker_FS12_FCS.dll`, `Compass_TA30_FCS.dll`, `Ternion_FS3_FCS.dll`, `Su30_VXN_FCS.dll`,
-`Vortex_FS20_FCS.dll`, or your namespace with `.` → `_`; the Vortex also references Rewired_Core, Unity.TextMeshPro and the
-UI / UIModule / TextRenderingModule / InputLegacyModule assemblies). Source dir: the **plugin folder** for all seven releases (from `.` the md5 differs and the core is not
-embedded). `build.sh` embeds `native/prebuilt/<Lib>.dll`. The Dev DLL is compiled from `DevUnlock/FcsDevPlugin.cs` directly.
+`python fcs.py build <jet> [--unified] [--check <release DLL>]` (any OS; finds csc and the game via `fcs.py setup --game` /
+`NO_GAME`; writes the DLLs, sha256s and release zips to `out/`). By hand: `NO_GAME=<game> bash build.sh <plugin folder>
+<out>/<AssemblyName>.dll` gives the **split** layout (the DLL plus `<Lib>.dll` copied beside it); `UNIFIED=1` embeds the core
+(that is what reproduces the releases byte for byte). The assembly name is taken from the output file name: use exactly the
+release name (`Aryx_F22E_StrikeRaptor_FCS.dll`, `Ifrit_KR67_FCS.dll`, `Revoker_FS12_FCS.dll`, `Compass_TA30_FCS.dll`,
+`Ternion_FS3_FCS.dll`, `Su30_VXN_FCS.dll`, `Vortex_FS20_FCS.dll`, `J20B_Weilong_FCS.dll`, or your namespace with `.` → `_`; the
+Vortex also references Rewired_Core, Unity.TextMeshPro and the UI / UIModule / TextRenderingModule / InputLegacyModule
+assemblies, and regenerates `FcsBuildInfo.cs` first). Source dir: the **plugin folder**. The Vortex Family FCS:
+`bash build-family.sh <out dir>`. The Dev DLL is compiled from `DevUnlock/FcsDevPlugin.cs` directly (`fcs.py build` does it).
 
 ### 4.5b Change or rebuild the native core (README §15.3)
 `bash native/build.sh linux` (bench `.so`; `bench.sh build` does it) and `bash native/build.sh` (game DLL; needs Rust with the
@@ -233,6 +262,11 @@ through §4.4 as law changes.
 | threading | `EstimatorJob`, `ParallelFcs` (`FcsPool.Helpers`, `IndexFork`, `Claimable`, `EffectorMirror`), `EvalGather` / `EvalCompute`, `SwGather`, `TickStats` |
 | push-over | `PushPlanStep`, `PushOverMinRate`, `PushPlanRise`, push governor (`PushGov*`, `SweepFloorPushMin`), 3.1.7 statics (`PushPlanDoneOpen`, `SweepSideKept`, `PushNoRetreat`, `PushPlanThrough`, ...) |
 | F-22E airframe X2e | `BodyLift.Interp` / `Sched` / `BuildCharts`, `ForeLiftSchedule`, `AftLiftSchedule`, `StabilatorStallAoA`, `AirframeRevision` |
+| F-22E two-zone airframe (default) | `TwoZoneAirframe`, `TwoZoneStabStallAoA` / `TwoZoneStabCLScale`, `TwoZoneStabUpwash`, `StabOutFrac`, `TwoZoneLowAoAUnstable`, `TwoZoneLiftRefit`, `TwoZoneSlatAftGain`, `FinBlanking` / `FinBlankAoA0/1`, `Downwash.ApplyOut`, `AirfoilScaleForce`; slats `SlatAero`, `SlatForce`, `SlatEffector`, `SlatPhysics`; static check `bench cmsweep` |
+| F-22E allocator 5.x | `Allocator.HorizonPick`, `HorizonObjective`, `CrossesFold`, `PairAllocator` (off), the 2.42 two-horizon rule; native ABI 5101000 |
+| J-20B bridge | `J20Bridge` (hinges of `Reasonix.J20.AeroControl`, pose written back in a postfix on the mod's step), `MassLayout004`, `WingVortex`; bench `J20Test`, `stubs/J20.cs` |
+| Vortex Family | `FamilyCompat`, `GeomGate` / `GeomGateData`, `FcsBuildInfo` (generated), `FcsVersion`, `build-family.sh`, `tools/gen_buildinfo.py` |
+| front door / kit tools | `fcs.py` (build, bench, fly, replay, suite, compare, summary, data, new, check, doctor), `tools/maint/import_release.py` |
 | fuel hook | `UseFuelScalePrefix` (Priority.First), `UseFuelPrefix` (Priority.Last) |
 | no-TVC / damage (Compass lineage) | `noVecJet`, `StickBypass`, `CoupNoTvcAlways`, `StabRollGovernor`, `AsymPitchBias`, `AsymDamageGate`, `AsymCapBrake`, `AsymCapGapTighten`, `VmcPredict`, `LiveAuthCap` |
 | Ternion / Su-30 specifics | `StructureFix`, `EngineOutZeroThrust`, `SpinRecovery`, `EngineOutSlipTrim`; `CantedTvc`, `ThrustLine`, `Names.Canon`, `LowSpeedTvcRoll`, `CaptureMeasured`, `SoftAoALimit`, `FuelCgHold` |
@@ -263,6 +297,12 @@ through §4.4 as law changes.
 - F-22E mains: `differentialBrakeFactor` −1 on both (no stock differential braking); stock jets −1 / +1.
 - Clones: `tools/new_airframe.py` renames the native library (`<FilePrefix>_FcsCore`) in sources, build scripts and Cargo
   files, and renames `native/prebuilt/<Lib>.dll`. Two FCS mods must never share a core name (each binds its own by module name).
+- F-22E only (5.x): the two-zone coplanar-stab airframe (on), the horizon-objective allocator, slats as effectors; no-TVC AoA caps
+  55 / 50 honoured exactly as set (4.8.10). Keep `TwoZoneAirframe` and the schedules together: the fore / aft schedules are
+  refitted for it (fit with the study kit's scripts, never by hand).
+- J-20B only: everything goes through `J20Bridge`; without the J-20B mod the FCS stays idle. Its bench flies only from a
+  `j20_airframe.json` (the `"j20"` block stands in for the mod's surface system). Its crate builds `Revoker_FcsCore`; the
+  plugin imports `J20B_FcsCore` (the bench copies the name, README F47).
 - STOVL exists for one lift system only (the Vortex's). No reference jet exists for other lift systems, swing wings, tailless
   designs, propeller aircraft, thrust reversers or 3+ engines (README §24.10). Treat a port to one of those as new law work,
   and say so to the user.
@@ -271,7 +311,7 @@ through §4.4 as law changes.
   `StabSplitMode` / `GroupRoll`, README F40), the F-22E's lateral governor margins (0.3.14), AoA limit 24° while STOVL is active.
 - Engine out: zero-thrust match on the Ternion, Compass (0.6.0), Ifrit, Su-30, F-22E; recovery thrust on the Su-30 and F-22E only
   (not the Ifrit; the Compass has no nozzles); single-engine Revoker / Vortex have `EngineOutZeroThrust` as a constant `false`.
-- Airframe files not in the kit: Ifrit, Revoker, Compass, Vortex (stock-game data; the Vortex also `vortex_systems.json`), F-22E (Aryx), Ternion (someone else's blueprint), Su-30 (kyleisred). Every bench builds but needs `BENCH_DATA` (and `BENCH_DMG`) to fly.
+- Airframe files not in the kit: Ifrit, Revoker, Compass, Vortex (stock-game data; the Vortex also `vortex_systems.json`), F-22E (Aryx), Ternion (someone else's blueprint), Su-30 (kyleisred), J-20B (Reasonix). `python fcs.py data <jet>` says how to make each. Every bench builds but needs `BENCH_DATA` (and `BENCH_DMG`) to fly.
 - Known stock-bench bugs (README §10.7): `IfritTest.Defaults()` overrides drag relief / stagger / LERX; Buffed `ThrustScale` / `DragScale` not applied on the Ifrit / Revoker (and `DragScale` on the Ternion) bench paths; no turbofan altitude lapse on the F-22E / Ternion benches. Fix before quoting performance numbers.
 
 ## 7. Reporting format the author expects

@@ -1,0 +1,8 @@
+bin/
+obj/
+*.pdb
+*.bak
+*.zip
+
+# keep the prebuilt native core (shipped beside the plugin, or embedded with --unified)
+!native/prebuilt/*.dll

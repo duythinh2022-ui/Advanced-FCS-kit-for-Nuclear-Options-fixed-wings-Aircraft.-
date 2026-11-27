@@ -25,28 +25,34 @@ What it changes (mechanically, nothing else):
 It does NOT change any control law, effector setup, limit or tuning value. It writes PORT_TODO.md into the clone: the list of
 places that are specific to the source jet and that you must review for your aircraft (README section 7).
 """
-import argparse, os, re, shutil, sys
+import argparse, glob, os, re, shutil, sys
 
 KIT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 BENCH_NS = "Aryx_F22E_StrikeRaptor.FCS"   # every bench compiles the synced FCS copy in this namespace (its stubs live there)
+
+def newest(prefix):
+    """the kit's newest reference/<prefix>-FCS-<version> folder (kit 5.0: no version to edit here when the kit updates)"""
+    hits = sorted(glob.glob(os.path.join(KIT, "reference", prefix + "-FCS-*")), key=lambda p: [int(x) for x in re.findall(r"\d+", p.rsplit("-FCS-", 1)[1])])
+    return os.path.relpath(hits[-1], KIT) if hits else f"reference/{prefix}-FCS-missing"
+
 
 SRC = {
     # fork order: f22e -> ifrit -> revoker -> compass -> ternion -> su30 (each forked from the one before it);
     # vortex was cloned from the revoker (STOVL: lift fan, roll posts, 3-bearing swivel nozzle)
     # lib = the native (Rust) core's library name: the C# DllImport name, the embedded resource and native/prebuilt/<lib>.dll
-    "f22e": dict(dir="reference/F22E-FCS-4.5.1", ns="Aryx_F22E_StrikeRaptor.FCS", title="F-22E Strike Raptor FCS", short="F-22E FCS",
+    "f22e": dict(dir=newest("F22E"), ns="Aryx_F22E_StrikeRaptor.FCS", title="F-22E Strike Raptor FCS", short="F-22E FCS",
                  harmony="com.aryx.strikeraptor.fcs", csv="F22E_FCS_", sync="bench/sync.sh", lib="F22E_FcsCore"),
-    "ifrit": dict(dir="reference/Ifrit-FCS-1.5.0", ns="Ifrit_KR67.FCS", title="KR-67 Ifrit FCS", short="Ifrit FCS",
+    "ifrit": dict(dir=newest("Ifrit"), ns="Ifrit_KR67.FCS", title="KR-67 Ifrit FCS", short="Ifrit FCS",
                   harmony="tom.ifrit_kr67.fcs", csv="Ifrit_FCS_", sync="bench/isync.sh", lib="Ifrit_FcsCore"),
-    "revoker": dict(dir="reference/Revoker-FCS-1.5.0", ns="Revoker_FS12.FCS", title="FS-12 Revoker FCS", short="Revoker FCS",
+    "revoker": dict(dir=newest("Revoker"), ns="Revoker_FS12.FCS", title="FS-12 Revoker FCS", short="Revoker FCS",
                     harmony="tom.revoker_fs12.fcs", csv="Revoker_FCS_", sync="bench/rsync.sh", lib="Revoker_FcsCore"),
-    "compass": dict(dir="reference/Compass-FCS-0.6.0", ns="Compass_TA30.FCS", title="T/A-30 Compass FCS", short="Compass FCS",
+    "compass": dict(dir=newest("Compass"), ns="Compass_TA30.FCS", title="T/A-30 Compass FCS", short="Compass FCS",
                     harmony="tom.compass_ta30.fcs", csv="Compass_FCS_", sync="bench/rsync.sh", lib="Compass_FcsCore"),
-    "ternion": dict(dir="reference/Ternion-FCS-0.4.2", ns="Ternion_FS3.FCS", title="FS-3 Ternion FCS", short="Ternion FCS",
+    "ternion": dict(dir=newest("Ternion"), ns="Ternion_FS3.FCS", title="FS-3 Ternion FCS", short="Ternion FCS",
                     harmony="tom.ternion_fs3.fcs", csv="Ternion_FCS_", sync="bench/rsync.sh", lib="Ternion_FcsCore"),
-    "su30": dict(dir="reference/Su30-FCS-0.6.5", ns="Su30_VXN.FCS", title="Su-30VXN FCS", short="Su-30 FCS",
+    "su30": dict(dir=newest("Su30"), ns="Su30_VXN.FCS", title="Su-30VXN FCS", short="Su-30 FCS",
                  harmony="tom.su30_vxn.fcs", csv="Su30_FCS_", sync="bench/rsync.sh", lib="Su30_FcsCore"),
-    "vortex": dict(dir="reference/Vortex-FCS-0.6.2", ns="Vortex_FS20.FCS", title="FS-20 Vortex FCS", short="Vortex FCS",
+    "vortex": dict(dir=newest("Vortex"), ns="Vortex_FS20.FCS", title="FS-20 Vortex FCS", short="Vortex FCS",
                    harmony="tom.vortex_fs20.fcs", csv="Vortex_FCS_", sync="bench/rsync.sh", lib="Vortex_FcsCore"),
 }
 
@@ -132,6 +138,7 @@ def main():
     P = os.path.join(dst, a.ns)
     harmony = a.harmony or ("fcs." + a.ns.lower())
     vrx = (r'public const string Version = "[^"]*";', f'public const string Version = "{a.version}";')
+    vrx2 = (r'public const string Value = "[^"]*";', f'public const string Value = "{a.version}";')   # Vortex 0.7+: FcsVersion.cs
     pairs = [(S["harmony"], harmony), (S["title"], a.title), (S["csv"], a.file_prefix + "_FCS_"), (S["ns"], a.ns), (S["short"], a.short)]
     n = 0
     # tools/smoke: the Vortex's offline smoke test loads types by namespace
@@ -140,7 +147,7 @@ def main():
             continue
         for f in os.listdir(root):
             if f.endswith(".cs"):
-                n += sub_file(os.path.join(root, f), pairs, [vrx])
+                n += sub_file(os.path.join(root, f), pairs, [vrx, vrx2])
     # native core library name: every text file that names it, and the prebuilt binary
     new_lib = re.sub(r"[^A-Za-z0-9_]", "_", a.file_prefix) + "_FcsCore"
     if S.get("lib") and new_lib != S["lib"]:
@@ -179,9 +186,11 @@ def main():
         t = t.replace(S["ns"].replace(".", r"\."), a.ns.replace(".", r"\.")).replace(f"namespace {S['ns']}", f"namespace {a.ns}")
     else:
         # the F-22E tree is already in the bench namespace: rename the clone's namespace back for the bench copy
-        t = t.replace("sed -i -E 's/\\bprivate\\b/internal/g' fcs/FcsController.cs",
-                      "sed -i -E 's/\\bprivate\\b/internal/g' fcs/FcsController.cs\n"
-                      f"sed -i -E 's/namespace {a.ns.replace('.', chr(92) + '.')}/namespace {BENCH_NS}/' fcs/*.cs")
+        # kit 5.0: insert after the whole `private -> internal` line (it lists more files since 4.x; a substring
+        # replace split that line and left AsymShared.cs private, so the clone's bench did not compile)
+        t = re.sub(r"^(sed -i -E 's/\\bprivate\\b/internal/g' fcs/FcsController\.cs[^\n]*)$",
+                   lambda m: m.group(1) + "\n" + f"sed -i -E 's/namespace {a.ns.replace('.', chr(92) + '.')}/namespace {BENCH_NS}/' fcs/*.cs",
+                   t, count=1, flags=re.M)
         t = t.replace("s=open(sys.argv[1]).read();", f"s=open(sys.argv[1]).read().replace('namespace {a.ns}','namespace {BENCH_NS}');")
     open(sync, "w").write(t)
     for w in ("bench.sh", "regen.sh"):

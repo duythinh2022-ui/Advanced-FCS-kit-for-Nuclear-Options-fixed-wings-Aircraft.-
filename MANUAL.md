@@ -2,27 +2,45 @@
 
 **A measured-state fly-by-wire for Nuclear Option aircraft, packaged so you can put it on your own.**
 
-This folder holds the complete flight control system (FCS) behind seven Nuclear Option mods: the source of all seven plugins,
+This folder holds the complete flight control system (FCS) behind eight Nuclear Option mods: the source of all eight plugins,
 the offline 6-DOF **bench** each one is tested on (a bench is a desktop flight simulator that runs the real FCS code against a
-model of the aircraft, so a change can be tested without the game), a tool that clones any of them onto a new aircraft, and
-this manual.
+model of the aircraft, so a change can be tested without the game), a tool that clones any of them onto a new aircraft, one
+front-door command for all of it (`python fcs.py`), and this manual.
 
 | Reference jet | FCS version | What the aircraft is |
 |---|---|---|
-| **F-22E Strike Raptor** (Aryx's mod) | 4.5.1 | twin canted fins + rudders, all-moving stabs, flaperons, **pitch-only TVC**; since 3.2.0 a **relaxed-to-neutral airframe** (airframe X2e) |
-| **KR-67 Ifrit** (stock) | 1.5.0 | canted all-moving tails that are also the **yaw axis** (no rudders), split decelerons, **pitch + roll TVC** |
-| **FS-12 Revoker** (stock) | 1.5.0 | **canards**, single fin, delta elevons, **pitch + yaw TVC** |
-| **T/A-30 Compass** (stock trainer) | 0.6.0 | conventional tail slabs, wing-root strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin |
-| **FS-3 Ternion** (Blueprinter mod) | 0.4.2 | **two pitch pairs** (canards + aft elevators), twin rudders, flaperons + rollervons, **no TVC** |
-| **Su-30VXN Gandiva** (kyleisred's Blueprinter mod) | 0.6.5 | canards + stabs + rudders, flaperons, **canted single-axis nozzles** (each nozzle one axis, 32° outboard) |
-| **FS-20 Vortex** (stock) | 0.6.2 | delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**: lift fan, roll posts, three-bearing swivel nozzle (F-35B-style laws) |
+| **F-22E Strike Raptor** (Aryx's mod) | 5.1.1 | twin canted fins + rudders, all-moving stabs, flaperons, slats, **pitch-only TVC**; since 4.8.11 the **two-zone coplanar-stab airframe** (§24.11), since 5.1.0 the horizon-objective allocator |
+| **KR-67 Ifrit** (stock) | 1.8.3 | canted all-moving tails that are also the **yaw axis** (no rudders), split decelerons, **pitch + roll TVC**; also flies the Multirole MTD canard variant |
+| **FS-12 Revoker** (stock) | 1.8.6 | **canards**, single fin, delta elevons, **pitch + yaw TVC**; poses the EF-2000 Typhoon mod's panels |
+| **T/A-30 Compass** (stock trainer) | 0.7.3 | conventional tail slabs, wing-root strakes, ailerons + flaps, **no TVC**, fixed-nozzle twin |
+| **FS-3 Ternion** (Blueprinter mod) | 0.5.1 | **two pitch pairs** (canards + aft elevators), twin rudders, flaperons + rollervons, **no TVC** |
+| **Su-30VXN Gandiva** (kyleisred's Blueprinter mod) | 0.7.3 | canards + stabs + rudders, flaperons, **canted single-axis nozzles** (each nozzle one axis, 32° outboard) |
+| **FS-20 Vortex** (stock) | 0.8.3 | delta with two elevon pairs, twin rudders, pitch nozzle; **STOVL**: lift fan, roll posts, three-bearing swivel nozzle (F-35B-style laws); the same source builds the **Vortex Family** FCS |
+| **J-20B Weilong** (Reasonix's mod) | 0.2.9 | canards + all-moving fins, flaperons; flies **through the mod's own surface system** (`Reasonix.J20.AeroControl`) |
 
-> **Status in one line:** the source here rebuilds all seven shipped release DLLs byte for byte (Rust core included), and all
-> seven benches build, compile their native core and fly (0 differences between the native core and its C# twin). The bench
-> is an approximation of the game and may not match it exactly. The kit 3.1 releases (12 Nov) were **flown and passed by the
-> author**; the releases added since (13–20 Nov) are compiled and benched, and their own release notes say which were flown.
-> Details in [§17](#17-verification-status).
+> **Status in one line:** the source here is exactly the eight releases' source. All eight benches build and compile their
+> native core; seven fly (the J-20B bench has no airframe), with 0 differences between the native core and its C# twin. The
+> bench is an approximation of the game and may not match it exactly. The kit 3.1 releases (12 Nov) were **flown and passed
+> by the author**; each newer release's own notes say whether it was flown. Details in [§17](#17-verification-status).
 
+> **Kit 5.0 (27 Nov 2026)** brings every jet to its newest release, adds an eighth (the **J-20B Weilong**), builds every
+> plugin as **two files** by default (the C# DLL plus its native core beside it, as NOMM wants), adds one front-door command
+> (`python fcs.py`), and adds F-22-style aerodynamics and stability-margin advice for jets with coplanar stabs.
+>
+> In detail:
+> - **Two files by default.** A plugin is now built as the **main DLL** (C#, nothing embedded) **plus the native core as a
+>   separate `<Lib>.dll`** beside it, because NOMM lists the plain C# DLL. The single-file DLL with the core inside is the
+>   optional build (`UNIFIED=1`, or `fcs.py build --unified`). The plugin runs without the core file, on its C# twin
+>   ([§15.1](#151-build-the-game-dll)).
+> - **One front door:** `python fcs.py` builds DLLs and release zips (Windows too, no bash), flies ready-made manoeuvres on
+>   the bench and prints a plain-English readout with curve checks, replays logs, runs and compares suites, clones a jet, and
+>   tells you what is missing (`fcs.py doctor`). See [§4](#4-quick-start).
+> - **No machine-specific paths:** `build.sh` and the extraction scripts read `NO_GAME`; the F-22E's 5.x batteries are
+>   relative to their tree.
+> - **F-22-style aerodynamics and stability margin** for jets with coplanar stabs:
+>   [§24.11](#2411-f-22-style-coplanar-stabs-aerodynamics-and-stability-margin).
+> - What each jet changed since kit 4.1 is in §19.24.
+>
 > **Kit 4.1 (20 Nov 2026)** brings the Vortex from 0.5.10 to **0.6.2**: new STOVL behaviour and the first reproducible,
 > attested native core. The other six jets are unchanged.
 >
@@ -58,7 +76,7 @@ this manual.
 > the way they point ([§8.24](#824-flying-backwards-the-mirrored-nose-axis)); the main brakes help steer on the ground
 > ([§8.26](#826-ground-steering-with-the-main-brakes)). New bench sets and game-runtime checks are in
 > [§10.8](#108-added-since-kit-20-1012-nov-all-six-benches), building the core in [§15.3](#153-build-the-native-core), and
-> eleven new failure modes in [§13](#13-failure-modes-we-have-hit) (F29–F39; kit 4.0 adds F40–F43, kit 4.1 F44). Kit 2.0 (10 Nov) added the Compass, Ternion and Su-30, multi-core
+> eleven new failure modes in [§13](#13-failure-modes-we-have-hit) (F29–F39; kit 4.0 adds F40–F43, kit 4.1 F44, kit 5.0 F45–F47). Kit 2.0 (10 Nov) added the Compass, Ternion and Su-30, multi-core
 > ticks, the F-22E's relaxed-to-neutral airframe and the push-over work. **Every problem and solution since the first kit
 > (5 Nov) is in [§19](#19-problem-and-solution-log)**.
 
@@ -75,12 +93,14 @@ port, credit the original author.
 | know how the work was done, with which tools, and what to expect doing it by hand | [§22 Workflow and tools](#22-workflow-and-tools), [§23 Doing it by hand](#23-doing-it-by-hand-caveats) |
 | shape your airframe so the FCS can fly it well (CG, margin, surfaces, strakes, thrust line) | [§24 Airframe aerodynamics](#24-airframe-aerodynamics-recommendations-for-modders) |
 | know why a replacement FCS is needed at all | [§1 Why an FCS mod](#1-why-an-fcs-mod-the-vanilla-flight-control-and-its-limits) |
-| understand how this one works | [§2 How it works](#2-how-it-works), then [§3 the seven jets](#3-the-seven-reference-jets-side-by-side) |
-| fly one of the seven jets | [§6 Using it in game](#6-using-it-in-game) |
+| understand how this one works | [§2 How it works](#2-how-it-works), then [§3 the eight jets](#3-the-eight-reference-jets-side-by-side) |
+| fly one of the eight jets | [§6 Using it in game](#6-using-it-in-game) |
 | put it on your own aircraft | [§4 Quick start](#4-quick-start) → [§7 Porting](#7-porting-it-to-your-aircraft) → [§8 Solution library](#8-solution-library-aircraft-configurations-we-have-solved) → [§9 Models](#9-adding-the-models) → [§10 Bench](#10-the-bench) → [§11 Tuning](#11-tuning) |
 | fix something that flies wrong | [§12 Troubleshooting](#12-troubleshooting), [§13 Failure modes](#13-failure-modes-we-have-hit), [§19 Problem and solution log](#19-problem-and-solution-log) |
 | see what changed since the first kit | [§19 Problem and solution log](#19-problem-and-solution-log) |
 | look up a word | [§18 Glossary](#18-glossary) |
+| build, bench or clone without reading the scripts | `python fcs.py` (§4.0): one command for all of it, with plain-English output |
+| give a jet with coplanar stabs F-22-style aerodynamics and a sensible stability margin | [§24.11](#2411-f-22-style-coplanar-stabs-aerodynamics-and-stability-margin) |
 | work on the code as an AI model | [`AGENTS.md`](AGENTS.md) first: the hard rules and procedures in compact form |
 
 Every technical term is explained in plain English where it first appears, and again in the glossary. The same manual is
@@ -92,7 +112,7 @@ also in this folder as a formatted PDF, **`NO-FCS-Kit-Manual.pdf`**, which is ea
 
 1. [Why an FCS mod: the vanilla flight control and its limits](#1-why-an-fcs-mod-the-vanilla-flight-control-and-its-limits)
 2. [How it works](#2-how-it-works)
-3. [The seven reference jets side by side](#3-the-seven-reference-jets-side-by-side)
+3. [The eight reference jets side by side](#3-the-eight-reference-jets-side-by-side)
 
 **Part II · Use it and build with it**
 
@@ -730,7 +750,8 @@ HarmonyX runs every prefix even after one returns false, so both drew: 1.65× st
 
 Since F-22E 4.0.0–4.1.4 (10–11 Nov), and on the other five since 11 Nov, the heaviest pure maths runs in a Rust library,
 `<Jet>_FcsCore` (`F22E_FcsCore`, `Ifrit_FcsCore`, `Revoker_FcsCore`, `Compass_FcsCore`, `Ternion_FcsCore`, `Su30_FcsCore`,
-`Vortex_FcsCore`).
+`Vortex_FcsCore`, `J20B_FcsCore`; the J-20B's is the Revoker's core under its own name, and the Vortex Family FCS ships
+the Vortex's as `VortexFamily_FcsCore`).
 **The C# is the reference; the library must return the same bits** wherever C# float arithmetic is strict 32-bit.
 
 | What runs in Rust | C# entry point | Dev switch ("0. Debug") |
@@ -743,9 +764,17 @@ Since F-22E 4.0.0–4.1.4 (10–11 Nov), and on the other five since 11 Nov, the
 - **What stays in C#:** the control laws, every read and write of the game's objects, and the rotations (Unity's
   `Quaternion.AngleAxis` / `Inverse` are Unity's own native code; the kernels get pre-rotated geometry). The kernels call
   nothing from a maths library but `atan2`, written as C# writes it (`(float)Math.Atan2((double)y, (double)x)`).
-- **One DLL** (since F-22E 4.1.4, the others 11 Nov): the core is a resource inside the plugin DLL. On first load it is written to
-  `BepInEx/cache/<Lib>/<first 16 hex of its SHA-256>/<Lib>.dll` and loaded by full path (a loose `<Lib>.dll` beside the plugin
-  is the fallback). Windows binds a `DllImport` by module name, which is why every jet's core has its own name.
+- **Two files by default (kit 5.0).** The plugin DLL is plain C#; the core ships beside it as `<Lib>.dll` in the same plugin
+  folder, and the plugin loads it by full path (Windows looks for a `DllImport`'s library beside the game's exe, not the
+  plugin). This is the layout NOMM lists (§15.1). **Unified, optional:** built with `UNIFIED=1`, the core is a resource
+  inside the plugin DLL (what every release up to F-22E 5.1.1 / Vortex 0.8.3 shipped); on first load it is written to
+  `BepInEx/cache/<Lib>/<first 16 hex of its SHA-256>/<Lib>.dll` and loaded from there. The same plugin source does both: it
+  tries the embedded copy first and falls back to the loose file, so nothing in the code changes between the two layouts.
+  Windows binds a `DllImport` by module name, which is why every jet's core has its own name.
+- **Without the core file** (split layout, core not installed) the FCS runs its C# twins: the same laws, more CPU. The log
+  reports `wanted (NativeAllocator = 2) but not usable, the C# solve runs: the embedded <Lib>.dll could not be written out
+  (this plugin DLL carries no <Lib>.dll) and none is beside the plugin`. That is expected for a player who installed only the
+  main DLL.
 - **Safety:** at load, a self-test runs the kernels and the LP against C# twins; a wrong ABI number, a wrong structure size, a
   failed test or an error return switches that part back to C# for the session, with one warning in the log. With the DLL
   missing the whole FCS runs in C#.
@@ -793,16 +822,22 @@ it stays a per-jet setting.**
 
 [↑ Contents](#contents)
 
-## 3. The seven reference jets side by side
+## 3. The eight reference jets side by side
 
 The jets were built one after another, each forked from the one before it: **F-22E → Ifrit → Revoker → Compass → Ternion →
-Su-30**; the **Vortex** was cloned from the Revoker (16 Nov). Each fork kept the laws and changed the effector set, the airframe
-changes and the tuning. So the newer jets carry everything the older ones learned, plus their own pieces. Since 17 Nov the
-asymmetric-load system is one shared file on all of them (§2.19).
+Su-30**; the **Vortex** was cloned from the Revoker (16 Nov), and the **J-20B** from Revoker 1.6.0 (23 Nov). Each fork kept the
+laws and changed the effector set, the airframe changes and the tuning. So the newer jets carry everything the older ones
+learned, plus their own pieces. Since 17 Nov the asymmetric-load system is one shared file on all of them (§2.19).
+
+**Since kit 4.1 (20–26 Nov)** the fleet shares more law code: the F-22E 4.5.2 / 4.5.3 governor fix, the roll-rate cap reading
+the yaw capacity from the hold allocation, the pull trade against the roll the jet already has, the push-governor rule, "a
+released roll no longer carries on into a push", and the AoA law's flight-path rate without the filter leak
+(`FlightPathRateMatched`, on every jet). The tables below describe the aircraft, effectors and airframe changes; the per-release
+law changes are in §19.24 and each tree's `release-notes/`.
 
 **The three fighters with TVC from the first kit:**
 
-| | F-22E Strike Raptor (4.5.1) | KR-67 Ifrit (1.5.0) | FS-12 Revoker (1.5.0) |
+| | F-22E Strike Raptor (5.1.1) | KR-67 Ifrit (1.8.3) | FS-12 Revoker (1.8.6) |
 |---|---|---|---|
 | Aircraft match (`Registry.IsF22`) | prefab `Aryx_KingRaptor*` or name contains "Strike Raptor" | prefab `Multirole1*` or "KR-67"/"Ifrit" | prefab `Fighter1*` or "FS-12"/"Revoker" |
 | Pitch effectors | 2 all-moving stabilators (`Stabilator`), pitch TVC | 2 canted all-moving tails (`Stabilator`, `elevator_L/R`), pitch TVC | 2 canards (`Stabilator`), outer elevons (`Aileron`, `ElevonPitch`), inner hinged elevons, pitch TVC |
@@ -811,19 +846,19 @@ asymmetric-load system is one shared file on all of them (§2.19).
 | Engines | 2, pitch TVC ±20° (`TvcPitchRange`); one out: zero-thrust match + recovery thrust (4.5.0 / 4.5.1, §8.28) | 2, 2D nozzles: pitch ±15°, roll (differential) ±15°; one out: zero-thrust match (1.5.0, no recovery thrust) | 1, pitch ±15°, yaw ±15° |
 | Surface ranges (code defaults) | stabs +35/−30 TE, rudders ±35, flaperons ±25 | game's own; flaperons ±30 | canards +60/−45 (TE up/down), elevons ±30, inner elevons ±25 |
 | Servo speed | 100°/s (`ActuatorSpeedScale` 1.43 × Aryx's 70) | 100°/s (`SurfaceServoSpeed`) | 100°/s |
-| AoA limits +/− | 65 / 50 | 65 / 60 | 70 / 55 |
+| AoA limits +/− | 65 / 50 (no TVC: 55 / 50, 4.8.11) | 65 / 60 (canard variant 70) | 70 / 55 (no TVC: exactly `NoTvcAoACap*`, 1.6.6) |
 | Max pitch rate | 60°/s; planned push-overs held to ≥ 23°/s | 48 → 60 at full stick | 60°/s (1.4.1; was 48 → 60) |
 | Max yaw rate | 75 | 75 | 90 |
-| Airframe aero changes | stall stagger, lift reshape (`LiftShape`), body-lift balance **plus the 3.2.x fore/aft lift schedule (relaxed to neutral, §8.15)**, stab lift peak 36° (was 25), stab downwash 0.6, fin + flap camber, effectiveness ×1.2 on flaperons, stabs and LERX | flap/aileron camber (K 0.46 / 0.57) | elevon stagger (inner 26 knee-preserving, outer 45), camber |
+| Airframe aero changes | **two-zone coplanar-stab airframe (4.8.x, default since 4.8.11; §24.11)**: two-zone stabs stalling at ~20° body AoA, refitted fore/aft lift schedules, slats with their own physics (4.6.0) and aft-lift coupling, fins blanked 38–46°; under it the X2e pieces (stall stagger, `LiftShape`, body-lift balance, fin + flap camber, ×1.2 on flaperons, stabs and LERX). `TwoZoneAirframe=false` gives X2e (§8.15) | flap/aileron camber (K 0.46 / 0.57) | elevon stagger (inner 26 knee-preserving, outer 45), camber |
 | Airbrake | Aryx's speedbrake split in the air; ground aero-brake configuration | split decelerons | dedicated airbrakes + trailing-edge brake config, canards down on the runway |
 | Governor specifics | estimator: 3 groups, fitted gains; `RollPaceRateBlend` 0.408, `RollStopSideslip` 4, `PushPlanK` 0.028 | 6 groups, gains 1; rudW from probes; `SlipFrameAlloc`; `TvcYawOffload`; blend 0.4, stop slip 6 | 6 groups, gains 1; rudW from probes; `SlipFrameAlloc`; blend 0.65, stop slip 6, `PushPlanK0` 40; `YawTvcNeutralYawGate` (1.4.2) |
 | Asymmetric-load AoA limit | one-axis check (the coupled check is ported but **off**, `AsymCoupledCheck`) | coupled check, share 0.75, replaces the one-axis check (1.2.0) | coupled check with both nozzles counted (1.2.0), also with nozzles locked / low thrust (1.3.0), share 0.7 / 0.8 |
 | Native core | `F22E_FcsCore` (exports `f22e_fcs_*`) | `Ifrit_FcsCore` (`ifr_fcs_*`; two-stage settled solve) | `Revoker_FcsCore` (`rev_fcs_*`) |
-| Unique extras | cosmetic nozzle re-rig and vent doors | `MpoFreeRoll` | render-only hinge visuals |
+| Unique extras | cosmetic nozzle re-rig and vent doors; horizon-objective allocator (5.1.0–5.1.1), pair-complete search (5.0.0, off) | `MpoFreeRoll`; Multirole MTD canard law and HUD AoA-limit marker (1.6.0–1.7.1) | render-only hinge visuals; poses the EF-2000 Typhoon mod's panels (1.6.1–1.8.4) |
 
 **The three added in kit 2.0:**
 
-| | T/A-30 Compass (0.6.0) | FS-3 Ternion (0.4.2) | Su-30VXN Gandiva (0.6.5) |
+| | T/A-30 Compass (0.7.3) | FS-3 Ternion (0.5.1) | Su-30VXN Gandiva (0.7.3) |
 |---|---|---|---|
 | What it is | stock trainer / light attack; forked from Revoker 0.8.2 | Blueprinter mod (prefab `P_Trisurface1`); forked from Compass 0.1.11 | kyleisred's Blueprinter mod (`SolarSu30.dll`); forked from Ternion 0.1.8 |
 | Aircraft match | prefab exactly `trainer` (or a clone), or "T/A-30"/"Compass" | prefab `P_Trisurface1` (or a clone), or "Ternion" | aircraftName "Su-30VXN" / "Gandiva" only (other Su-30 mods are left alone) |
@@ -843,7 +878,7 @@ asymmetric-load system is one shared file on all of them (§2.19).
 
 **Added in kit 4.0, the first STOVL jet:**
 
-| | FS-20 Vortex (0.6.2) |
+| | FS-20 Vortex (0.8.3) |
 |---|---|
 | What it is | stock STOVL fighter (prefab `SmallFighter1`); cloned from Revoker 1.4.2 on 16 Nov, F-35B-style STOVL laws added (§8.27) |
 | Aircraft match | prefab `SmallFighter1*`, or "FS-20" / "Vortex" |
@@ -857,12 +892,29 @@ asymmetric-load system is one shared file on all of them (§2.19).
 | Asymmetric-load AoA limit | shared code (§2.19), share 0.7, AoA floor 10 (0.3.2); `ReleaseGuard`: in STOVL a weapon release the hover could not trim is held (hold the trigger 1 s to drop) |
 | Governor specifics | the F-22E's margins: blend 0.408, stop slip 4 (0.3.14); loaded-roll sideslip fix in the allocator (Vortex only, 0.3.4); `YawTvcNeutralYawGate` (from the Revoker) |
 | Native core | `Vortex_FcsCore` (exports keep the Revoker's `rev_fcs_*` names; the library name is what keeps the two apart) |
-| Unique extras | STOVL HUD (throttle gauge in knots, ship-match "H" icon), zero-ground-speed throttle detent, ship-relative hover, pedal pirouette key, render-only vane box under the lift fan |
+| Unique extras | STOVL HUD (throttle gauge in knots, ship-match "H" icon), zero-ground-speed throttle detent, ship-relative hover, pedal pirouette key, render-only vane box under the lift fan; one learned aero model for the STOVL laws (0.6.7); the **Vortex Family** build (0.7.1+): the same source with `-define:FAMILY_FCS` (`build-family.sh`) flies the FS-20 Vortex Family mod's five jets, with its own GUID and core name, and hands over by a code fingerprint (`tools/gen_buildinfo.py`) |
+
+**Added in kit 5.0: a jet that flies through its mod's own surface system:**
+
+| | J-20B Weilong (0.2.9) |
+|---|---|
+| What it is | Reasonix's J-20B Weilong mod; forked from Revoker 1.6.0 on 23–24 Nov with the shared asymmetric-load files from the Su-30 / Ternion line |
+| Aircraft match | the J-20B mod loaded (`J20Bridge.Present`) and prefab `J20NativeMinimum*` or aircraftName contains "J-20" |
+| How it drives the jet | the mod has **no stock `ControlSurface`s**: its `Reasonix.J20.AeroControl` steps ten hinged surfaces every physics step. The FCS drives them through those hinges in its own tick and puts its poses back after the mod's step (Harmony postfix). The assembly is looked up once and a miss is cached (rule 24); without the mod the FCS stays idle |
+| Pitch effectors | canards (pitch-only by default, 0.1.4), inner + outer elevons; the all-moving fins count for pitch (0.1.3) |
+| Roll effectors | elevon differential (camber-coupled: inner 0.61, outer 0.47); canard roll is an option (0.2.2) |
+| Yaw effectors | the all-moving fins |
+| Engines | 2, no TVC |
+| AoA limits | 45 (0.2.0); the AoA holds through rolls and loops |
+| Airframe aero changes | forebody / chine lift ×1.5 on a slender-strake (Polhamus) curve, wing root and inner wing ×1.25, CG 0.75 m ahead of the mains held as fuel burns; on the mod's 0.0.5 the 0.0.4 mass layout is put back (`RestoreMassLayout004`, 0.2.9) |
+| Native core | `J20B_FcsCore` = the Revoker's core under its own name (`rev_fcs_*` exports); the crate still builds `Revoker_FcsCore`, so the bench copies it to the J-20B name |
+| Bench | needs `j20_airframe.json` extracted from the mod (`bench/extract/j20_extract.py`); its `"j20"` block stands in for the mod's surface system. Not in the kit (Reasonix's data) |
+| Releases | the J-20B shipped three zips from the start: the single-file DLL, a C#-only DLL and an optional `J20B_FcsCore.dll`, the pattern kit 5.0 makes the default (§15.1) |
 
 Performance profile (Buffed): thrust ×1.08 (Su-30 ×1.10 since 0.6.2, Vortex ×1.12), fuel burn ×0.75 (Ifrit / Revoker / Su-30 ×0.65), parasitic drag
 ×0.885–0.90, flares ×10, gun ×2, EW ×1.5 / ×1.2. Stock = the original aircraft's numbers.
 
-`docs/CONFIG_REFERENCE.md` has every key (597 of them) with all seven defaults; `docs/MODULE_MAP.md` lists every file with its
+`docs/CONFIG_REFERENCE.md` has every key (722 of them) with all eight defaults; `docs/MODULE_MAP.md` lists every file with its
 size on each jet and how far each jet has moved from the one it was forked from.
 
 **Which reference to start from:**
@@ -876,6 +928,8 @@ size on each jet and how far each jet has moved from the one it was forked from.
 | two pitch surfaces (canards **and** a tail), or a Blueprinter jet, or a twin with no TVC that must survive an engine out | **Ternion** | two `Stabilator` pairs priced so they don't fight; `StructureFix`; zero-thrust match; spin recovery; MPO without TVC |
 | single-axis or canted nozzles, thrust line off the CG, or a jet that must roll about its nozzle axis when slow | **Su-30** | `CantedTvc`, `ThrustLineAtCg`, low-speed TVC roll, measured capture, soft AoA limit; also the only jet with every feature above |
 | STOVL / VTOL: a lift fan, lift jets, roll posts or a swivelling nozzle | **Vortex** | the only reference with STOVL laws (§8.27): hover, conversion, translational-rate command, lift-system effectors in the allocator; its CTOL side is the Revoker's |
+| all-moving stabs **coplanar with the wing** (F-22 / F-35-like) | **F-22E** | the two-zone coplanar-stab airframe and its stability margin (§24.11) |
+| an aircraft mod that moves its surfaces with its own scripts instead of game `ControlSurface`s | **J-20B** | the bridge pattern: drive the mod's hinges in the FCS tick, write the pose back after the mod's step, cache the lookups |
 | none of the above / not sure | **Revoker** or a later fork | the stock-jet lineage (Ifrit → Su-30) counts every effector in the estimator; the F-22E's estimator drops non-surface effectors (§9.1.4) |
 
 [↑ Contents](#contents)
@@ -886,39 +940,86 @@ size on each jet and how far each jet has moved from the one it was forked from.
 
 ## 4. Quick start
 
-### 4.1 I just want to fly one of the seven jets
+### 4.0 The front door: `python fcs.py`
 
-Install the release from the author's GitHub or from NOMM (the Nuclear Option Mod Manager). Everything in §6 applies. The
-Ternion and Su-30 FCS need their aircraft mods installed (the FS-3 Ternion blueprint, kyleisred's Su-30VXN); the other five
-fly stock or Aryx's jets.
+Every everyday job in the kit is one command, run from the kit's folder. It needs Python 3 and the .NET 8 SDK; it works on
+Windows without bash for building DLLs, flying the bench and reading results. Run it with no arguments for the overview.
+
+```text
+python fcs.py doctor                      what is installed and what is missing, with the fix for each line
+python fcs.py list                        the eight jets, and which one to start a port from
+python fcs.py setup --game "<your Nuclear Option folder>"     once: where the game's DLLs are (needed to build plugins)
+
+python fcs.py build revoker               plugin DLL + native core DLL + Dev DLL + the release zips, in out/Revoker-1.8.6/
+python fcs.py build revoker --unified     also the single-file DLL (core inside) as an optional zip
+
+python fcs.py data revoker                is the bench's airframe file there, and how to make it from your game copy
+python fcs.py bench revoker build         compile the bench (runs the tree's bash scripts: Git Bash or WSL on Windows)
+python fcs.py presets                     the ready-made manoeuvres
+python fcs.py fly revoker pull-roll       fly one; prints a plain-English readout and the curve checks
+python fcs.py fly revoker reversal ias=550 MaxPitchRate=48 --plot     any speed, any FCS setting, and a PNG of the run
+python fcs.py replay revoker my_log.csv 120 135          your flight log, from its logged state, on the bench
+python fcs.py summary <any bench or flight CSV> --plot   the same readout for any CSV
+python fcs.py suite revoker before   ...   python fcs.py compare revoker before after     A/B regression check
+
+python fcs.py new                         start a port: asks a few questions, then clones the closest jet
+```
+
+A readout looks like this (Compass, `pull-roll`, bench):
+
+```text
+  Speed          425 -> 322 km/h
+  AoA            peak 35.0°   lowest 1.9°           angle of attack: nose above the airflow
+  Load           peak 6.05 g   lowest 0.88 g
+  Sideslip       worst 3.8°                         nose off the airflow sideways; smaller is better
+  Roll rate      peak 173°/s                        pV = velocity-vector roll where the bench logs it
+  native core: in use, 7,145 solves, 0 fallbacks
+Curve checks (quick screens of the rule: instant response, smooth rate, no spike, hitch or chatter):
+  roll rate: onset 10->90 % of peak in 0.33 s · no dips · no spikes · no chatter
+```
+
+The curve checks flag what to look at (dips and hitches, single-sample spikes, slope reversals that mean chatter). They do
+not replace looking at the time history: add `--plot`. Results go to `runs/<jet>/`. Your machine's settings (game folder,
+where your airframe files are) go to `fcs.local.json`, which stays out of git.
+
+The tree scripts underneath (`build.sh`, `bench.sh`, `tools/new_airframe.py`) still work as before, and §7, §10 and §15 describe
+them. `fcs.py` calls them, or does the same steps in Python.
+
+### 4.1 I just want to fly one of the eight jets
+
+Install the release from the author's GitHub or from NOMM (the Nuclear Option Mod Manager). Everything in §6 applies. Put the
+plugin DLL and, for the fast path, its native core DLL (`<Lib>.dll`) in the same `BepInEx/plugins/<folder>/` (§15.1). The
+Ternion, Su-30 and J-20B FCS need their aircraft mods installed (the FS-3 Ternion blueprint, kyleisred's Su-30VXN, Reasonix's
+J-20B Weilong); the Vortex Family FCS needs the FS-20 Vortex Family mod. The others fly stock or Aryx's jets.
 
 ### 4.2 I want this FCS on my aircraft
 
 1. Read §2 (how it works) at least down to §2.5, and §3 to pick the reference jet closest to your aircraft.
-2. Clone it under your aircraft's identity:
+2. Clone it under your aircraft's identity: `python fcs.py new` asks the questions. The same with every option given:
    ```bash
    python3 tools/new_airframe.py --from <f22e|ifrit|revoker|compass|ternion|su30|vortex> --out ~/MyJet-FCS --ns MyJet.FCS \
        --title "MyJet FCS" --short "MyJet FCS" --file-prefix MyJet --prefab <your prefab name> --match "<part of your aircraftName>"
    ```
    `--prefab` is optional: without it the jet is matched by its aircraftName only (what the Su-30 does).
-3. Work through the generated `PORT_TODO.md` with §7 (porting) and §9 (models).
+3. Work through the generated `PORT_TODO.md` with §7 (porting) and §9 (models). If your jet has coplanar stabs, read §24.11.
 4. Build a bench model of your aircraft (§9.2) and check it against flight logs before trusting it.
 5. Build the DLL (§15), fly, log, compare with the bench, iterate (§11).
 
 ### 4.3 I want to run a bench
 
 ```bash
-sudo apt install -y dotnet-sdk-8.0 python3 python3-pandas python3-numpy python3-scipy   # Linux or WSL2
-cd reference/Revoker-FCS-1.5.0           # or Ifrit-FCS-1.5.0 / Compass-FCS-0.6.0 / Vortex-FCS-0.6.2 (extract the airframe files first: §5)
-bash bench.sh build                       # sync the FCS source into bench/fcs, generate the config stub, compile
-bash bench.sh fly ias=400 alt=1500 thr=1 T=6 pitch=0:0,0.2:1 roll=0:0,1.5:0,1.7:1 fcslog=bench/out/x.csv
-bash bench.sh suite base                  # the regression suite (~10 min on 2 cores)
+python fcs.py doctor                       # .NET 8 SDK, bash (Git Bash / WSL on Windows), pandas for the suites
+python fcs.py data revoker                 # make the airframe file from your game copy (not in the kit: §5), then --set its folder
+python fcs.py bench revoker build
+python fcs.py fly revoker pull-roll
+python fcs.py suite revoker base           # the regression suite (~10 min on 2 cores)
 ```
-The F-22E bench uses `bench.sh one ...` instead of `fly`. The Vortex bench also has a STOVL mode:
-`dotnet bench/bin/bench.dll stovl ias=250 alt=300 T=60 tog=1 thr=0:0.15,7:0,31:0.25` (conversion at 250 km/h, decelerate to a
-hover; `ground=1` starts on the gear; the lift system is read from `vortex_systems.json` beside `BENCH_DATA`). Every bench builds without its airframe files but needs them to fly
-(game or third-party data, not published: §5); point `BENCH_DATA` (and `BENCH_DMG`) at your own extract.
-Details in §10.
+By hand, in a tree: `bash bench.sh build`, then `bash bench.sh fly ias=400 alt=1500 thr=1 T=6 pitch=0:0,0.2:1
+roll=0:0,1.5:0,1.7:1 fcslog=bench/out/x.csv` (the F-22E bench uses `bench.sh one ...`). The Vortex bench also has a STOVL mode
+(`python fcs.py fly vortex hover`, or `dotnet bench/bin/bench.dll stovl ias=250 alt=300 T=60 tog=1 thr=0:0.15,7:0,31:0.25`:
+conversion at 250 km/h, decelerate to a hover; `ground=1` starts on the gear; the lift system is read from
+`vortex_systems.json` beside `BENCH_DATA`). Every bench builds without its airframe files but needs them to fly (game or
+third-party data, not published: §5). Details in §10.
 
 [↑ Contents](#contents)
 
@@ -932,27 +1033,30 @@ NO-FCS-Kit/
 ├── NO-FCS-Kit-Manual.pdf         this manual as a formatted PDF
 ├── AGENTS.md                     rules + procedures for AI models
 ├── docs/
-│   ├── CONFIG_REFERENCE.md       every config key, seven jets side by side (generated)
+│   ├── CONFIG_REFERENCE.md       every config key, eight jets side by side (generated)
 │   ├── MODULE_MAP.md             every source file: layer, role, size, divergence (generated)
 │   ├── papers/                   Tom's write-ups (Sept / Oct 2026)
 │   └── design-history/           the newest design hand-offs
+├── fcs.py                        the front door: build, bench, fly, replay, suites, clone, doctor (§4.0)
+├── QUICKSTART.md                 the ten commands to start with
 ├── reference/
-│   ├── F22E-FCS-4.5.1/           plugin folder Aryx_F22E_StrikeRaptor.FCS/; studies/ (airframe study kit, push scoring,
-│   │                             the loaded-reversal port hand-off)
-│   ├── Ifrit-FCS-1.5.0/          plugin folder Ifrit_KR67.FCS/
-│   ├── Revoker-FCS-1.5.0/        plugin folder Revoker_FS12.FCS/
-│   ├── Compass-FCS-0.6.0/        plugin folder Compass_TA30.FCS/
-│   ├── Ternion-FCS-0.4.2/        plugin folder Ternion_FS3.FCS/
-│   ├── Su30-FCS-0.6.5/           plugin folder Su30_VXN.FCS/
-│   └── Vortex-FCS-0.6.2/         plugin folder Vortex_FS20.FCS/; tools/vanebox/ (vane box mesh generator),
-│                                 tools/smoke/ (offline type-load smoke test under Mono)
+│   ├── F22E-FCS-5.1.1/           plugin folder Aryx_F22E_StrikeRaptor.FCS/; studies/ (airframe study kit, push scoring,
+│   │                             rate saturation, the loaded-reversal port hand-off); tools/battery/ (the 5.x batteries)
+│   ├── Ifrit-FCS-1.8.3/          plugin folder Ifrit_KR67.FCS/
+│   ├── Revoker-FCS-1.8.6/        plugin folder Revoker_FS12.FCS/
+│   ├── Compass-FCS-0.7.3/        plugin folder Compass_TA30.FCS/
+│   ├── Ternion-FCS-0.5.1/        plugin folder Ternion_FS3.FCS/
+│   ├── Su30-FCS-0.7.3/           plugin folder Su30_VXN.FCS/
+│   ├── Vortex-FCS-0.8.3/         plugin folder Vortex_FS20.FCS/; build-family.sh (the Vortex Family FCS from the same
+│   │                             source); tools/vanebox/, tools/smoke/, tools/gen_buildinfo.py (family fingerprint)
+│   └── J20B-FCS-0.2.9/           plugin folder J20B_Weilong.FCS/; bench/extract/j20_extract.py (airframe from the mod)
 │       (every tree)              tools/asym_shared/ (checkshared.py: the shared asymmetric-load files, §2.19)
 │       ├── <Namespace>.FCS/      the plugin: laws, models, glue (one DLL)
-│       ├── native/               the Rust core: fcs_core/ (source), prebuilt/<Lib>.dll (the core embedded in the shipped
-│       │                         DLL), build.sh (Windows DLL or the bench's Linux .so), verify/ (game-Mono harness), README.md
+│       ├── native/               the Rust core: fcs_core/ (source), prebuilt/<Lib>.dll (the core the release ships, beside
+│       │                         the plugin or embedded), build.sh (Windows DLL or the bench's Linux .so), verify/, README.md
 │       ├── DevUnlock/            optional plugin that unlocks the Dev config
 │       ├── Properties/ ...       assembly attributes (part of the build)
-│       ├── build.sh              builds the game DLL
+│       ├── build.sh              builds the game DLL (split by default, UNIFIED=1 single file; §15.1)
 │       ├── bench.sh              bench front end: build, suite, diff, replay, runs
 │       ├── bench/                sim/ plant, stubs/ fake Unity + game, an/ calib/
 │       │                         scripts/ analysis, extract/ airframe extraction, groundsim/ gear and brake models
@@ -960,7 +1064,8 @@ NO-FCS-Kit/
 │       ├── CHANGELOG.md          one entry per version (stock-lineage jets)
 │       └── release-notes/        per-version notes in its source zip (CHANGELOG / §19 cover the rest)
 └── tools/
-    ├── new_airframe.py           clone a reference onto a new aircraft
+    ├── new_airframe.py           clone a reference onto a new aircraft (fcs.py new)
+    ├── maint/import_release.py   kit maintainers: import a release's Source zip as a reference tree
     ├── gen_config_reference.py   regenerate docs/CONFIG_REFERENCE.md
     ├── gen_module_map.py         regenerate docs/MODULE_MAP.md
     └── build_manual_pdf.py       rebuild NO-FCS-Kit-Manual.pdf from MANUAL.md
@@ -971,7 +1076,10 @@ NO-FCS-Kit/
   the Vortex also `vortex_systems.json`, its lift system, and borrows the Revoker's damage file);
 - F-22E: `bench/data/airframe_cal.json`, `bench/data/f22e_damage.json` (Aryx's asset bundle);
 - Ternion: `bench/extract/ternion_airframe.json`, `bench/data/ternion_damage.json` (someone else's Blueprinter blueprint);
-- Su-30: `bench/extract/su30_airframe.json`, `su30_101_airframe.json` (kyleisred's mod; its bench borrows `ternion_damage.json`).
+- Su-30: `bench/extract/su30_airframe.json`, `su30_101_airframe.json` (kyleisred's mod; its bench borrows `ternion_damage.json`);
+- J-20B: `bench/extract/j20_airframe.json` (Reasonix's mod, made with `j20_extract.py`).
+
+`python fcs.py data <jet>` tells you whether a bench has its files and how to make them.
 
 The benches build without them but need them to fly; regenerate them from your own copy of the game or the mod with the
 scripts in `bench/extract/` (§9.2; a note in each folder says which) or ask the author. Some Ternion and Su-30 bench modes also
@@ -979,8 +1087,9 @@ compare against the Compass and Revoker files.
 
 **Not included either:** the F-22E's suite outputs of single runs, each bench's `bin/`, `obj/`, `out/` and synced `fcs/` copy
 (rebuilt by `bench.sh build`), and the Rust build folders (`native/fcs_core/target/`). The F-22E's 9 Nov airframe study kit
-*is* included, as `reference/F22E-FCS-4.5.1/studies/` (§8.15). The prebuilt cores in `native/prebuilt/` are included: they are
-the exact libraries embedded in the shipped DLLs, so `build.sh` reproduces the release byte for byte without a Rust toolchain.
+*is* included, as `reference/F22E-FCS-5.1.1/studies/` (§8.15). The prebuilt cores in `native/prebuilt/` are included: they are
+the exact libraries the releases carry, so `UNIFIED=1 bash build.sh` reproduces a release DLL byte for byte without a Rust
+toolchain, and the split build ships them as they are.
 
 **"Bare" versus complete.** Each reference tree is the *complete* plugin, byte-for-byte what ships, because that is the only
 form the bench and the release checks are valid for. The parts that are not flight control are labelled instead of cut:
@@ -1852,6 +1961,8 @@ out at 40–70° AoA; its pitch through a fast 65 → 25° push is still 7–9 d
 ## 10. The bench
 
 ### 10.1 Build
+`python fcs.py bench <jet> build` does all of this and reports where the bench, its native core and its airframe file are. By
+hand:
 ```bash
 cd reference/<Jet>
 bash bench.sh build      # sync the FCS sources into bench/fcs (namespace → bench's), regenerate the Plugin stub
@@ -1868,6 +1979,8 @@ copies it into `bench/bin`. Without `cargo` the bench silently runs the C# twins
 `FCS_NATIVE_STATS=<file>` on a run to see which path ran (native solves, kernel calls, coupled-check LPs, fallbacks).
 
 ### 10.2 Single runs
+`python fcs.py fly <jet> <preset>` flies a named manoeuvre on any bench with the right syntax for that bench and prints a
+readout with curve checks (§4.0; `python fcs.py presets` lists them). By hand:
 - F-22E: `bash bench.sh one iasKmh=560 alt=1500 trimT=1 throttle=1 prof=<t:stick,...> rprof=<t:stick,...> csv=out.csv`
   (`prof` = pitch stick profile, `rprof` = roll stick, piecewise linear `time:value`).
 - Ifrit, Revoker, Compass, Ternion, Su-30: `bash bench.sh fly ias=400 alt=1500 thr=1 T=6 pitch=0:0,0.2:1 roll=0:0,1.5:0,1.7:1 fcslog=out.csv`
@@ -2355,7 +2468,33 @@ plant. Each was found in flight telemetry, reproduced on the bench and fixed at 
   - They are cached and run once per session, so there is no frame cost. But each miss still costs one full type scan plus a
     warning line.
   - If the type initialiser runs before Aryx's mod has loaded, the miss is permanent.
-  - Changing this would change released DLLs, so it is left for each jet's next release.
+  - Changing this would change released DLLs, so it is left for each jet's next release. *Kit 5.0:* still open on all eight.
+
+**F45. A shared file that stopped being shared** (found assembling kit 5.0)
+- *Symptom:* `python fcs.py check` reports `AsymShared.cs` with five different texts: one on the Compass, Ternion, Su-30 and
+  J-20B, and its own on the F-22E, Ifrit, Revoker and Vortex (40–110 changed lines each). `AsymCap.cs` and `CoupledCap.cs` are
+  still identical on all eight.
+- *Cause:* fixes made on one jet's copy since 17 Nov (F-22E 4.7.0 / 4.8.2 slat and fin parts and the authority-cap rise; Ifrit
+  1.7.0 `StabLatShare` for canard jets; Revoker 1.6.6 no-TVC negative cap) were not carried to the others. That breaks the 17 Nov
+  rule that shared logic stays the same on every jet (§2.19, design rule 22).
+- *Status:* recorded, not changed: merging the texts changes every jet's released DLL and needs each jet benched. Per-jet
+  behaviour belongs in per-jet settings (`Plugin` / the per-jet members `checkshared.py` lists), so the merge is to move each
+  jet's difference behind a setting with today's value as its default.
+
+**F46. A clone whose bench did not compile** (`tools/new_airframe.py`, kit 4.1 → 5.0)
+- *Symptom:* a clone of the F-22E 5.1.1 tree built its game DLL, but its bench failed with `'FcsController.asymSweepIas' is
+  inaccessible due to its protection level`.
+- *Cause:* the clone tool added its namespace rename by replacing the text of the sync script's `private → internal` line. Since
+  F-22E 4.x that line also lists `fcs/AsymShared.cs`, so the replace split the line, and `AsymShared.cs` stayed private in the
+  bench copy.
+- *Fix:* the tool now inserts after the whole line (a regular expression anchored on the line). Checked: F-22E, Revoker and
+  Vortex clones build, and their bench runs match the reference's.
+
+**F47. The bench quietly ran C# instead of its native core** (J-20B 0.2.9 tree)
+- *Cause:* the J-20B's crate still builds `libRevoker_FcsCore.so`, while the plugin imports `J20B_FcsCore`. On the bench the
+  import did not find a library of that name.
+- *Fix (kit 5.0):* the J-20B's `bench.sh build` also copies it as `libJ20B_FcsCore.so`. Use `FCS_NATIVE_STATS` (or `fcs.py fly`,
+  which prints it) to see which path a run took.
 
 **Lesson** (from the paper): every cost term in a nonlinear allocator needs consistent units with the error term, an explicit
 statement of which state it must not act in, and a test with a deliberately wrong model. Several failures were **bistable**: a
@@ -2404,39 +2543,76 @@ These are the rules the author set and the code has been held to. Follow them in
     `GetType(name, false)` instead of `AccessTools.TypeByName`, and work when the mod is absent (F44).
 21. **A term added to a law goes into that law's command,** inside its envelope and rate budget, never after its output
     (Vortex 0.5.23: a turn term added after the CTOL pitch law asked 245 deg/s at 80° of bank).
+22. **Shared logic stays shared** (Tom, 17 Nov): one text on every jet; where a jet needs a different number for an airframe
+    reason, that number is a per-jet setting, never a fork of the shared code (F45).
+23. **Twitchy, jerky or hesitant effector motion is fixed in the laws** (Tom, 25 Nov), not with slower actuators or more
+    actuator damping.
+24. **No extra latches, gates or added logic** (Tom, 25 Nov): fix at the source, so the FCS simply follows the pilot's command.
+25. **A targeted fix is accepted when replaying the flight log on the bench comes out the same as the previous version
+    everywhere except the problem cases** (Tom, 26 Nov). There the problem must be gone, and only the performance traded for it
+    may be worse. The result must not depend on the bench's CG or mass calibration: the FCS must absorb CG differences.
 
 [↑ Contents](#contents)
 
 ## 15. Building, versioning and releasing
 
 ### 15.1 Build the game DLL
+
+**Two layouts (kit 5.0).** NOMM (the Nuclear Option Mod Manager) lists a plain C# plugin DLL, not one with native code
+inside. So a plugin is built by default as **two separate files**: the **main DLL** (C#) and the **native core**
+(`<Lib>.dll`, Rust) that ships beside it. The single-file DLL with the core embedded is the **optional** build. The plugin's
+loader handles both without any change in the code: it tries an embedded copy first, then a loose `<Lib>.dll` in its own
+folder, and runs the C# twin when neither is there (§2.18).
+
+| Layout | Files in `BepInEx/plugins/<folder>/` | Built with | Where it goes |
+|---|---|---|---|
+| **Split (default)** | `<Asm>.dll` (C#, nothing embedded) + `<Lib>.dll` (the native core) | `bash build.sh ...` or `python fcs.py build <jet>` | the main zip holds the plugin DLL; `Optional.<mod>-<ver>-NativeCore.zip` holds the core and a README. NOMM lists the main zip |
+| Split, core not installed | `<Asm>.dll` only | same | works: every solve in C#, same laws, more CPU per tick (F-22E: about 0.3 ms per tick more, §2.18) |
+| **Unified (optional)** | `<Asm>.dll` with the core as a resource | `UNIFIED=1 bash build.sh ...` or `fcs.py build <jet> --unified` | `Optional.<mod>-<ver>-Unified.zip` (GitHub). Every release up to kit 4.1 shipped this layout |
+
+The easy way, on any OS:
 ```bash
-export NO_MANAGED="<Nuclear Option>/NuclearOption_Data/Managed"   # or edit the default path at the top of build.sh
-export NO_BEPINEX_CORE="<Nuclear Option>/BepInEx/core"
-cd reference
-(cd F22E-FCS-4.5.1    && bash build.sh Aryx_F22E_StrikeRaptor.FCS Aryx_F22E_StrikeRaptor_FCS.dll)
-(cd Ifrit-FCS-1.5.0    && bash build.sh Ifrit_KR67.FCS Ifrit_KR67_FCS.dll)
-(cd Revoker-FCS-1.5.0  && bash build.sh Revoker_FS12.FCS Revoker_FS12_FCS.dll)
-(cd Compass-FCS-0.6.0  && bash build.sh Compass_TA30.FCS Compass_TA30_FCS.dll)
-(cd Ternion-FCS-0.4.2  && bash build.sh Ternion_FS3.FCS Ternion_FS3_FCS.dll)
-(cd Su30-FCS-0.6.5     && bash build.sh Su30_VXN.FCS Su30_VXN_FCS.dll)
-(cd Vortex-FCS-0.6.2   && bash build.sh Vortex_FS20.FCS Vortex_FS20_FCS.dll)   # also needs Rewired_Core, Unity.TextMeshPro,
-                                                                              # UnityEngine.UI / UIModule / TextRenderingModule /
-                                                                              # InputLegacyModule from Managed (HUD and input hooks)
+python fcs.py setup --game "<Nuclear Option folder>"     # once
+python fcs.py build f22e                                 # -> out/F22E-5.1.1/: DLLs, sha256s and the zips, named to sort the player zip first
+python fcs.py build f22e --unified --check <a release DLL>   # also the single file, and a byte-for-byte check against a release
 ```
-All seven are built from **the plugin folder** (kit 2.0's "." builds for four of them are gone). `build.sh` embeds
-`native/prebuilt/<Lib>.dll` as a resource (`-resource:$CORE,<Lib>.dll`); that prebuilt core is the one the release carries.
-`build.sh` calls the .NET SDK's Roslyn `csc` directly (C# 9, deterministic, against the game's Mono assemblies). With the same
-inputs it reproduces the release DLLs byte for byte (§17). The Dev DLL is compiled from `DevUnlock/FcsDevPlugin.cs` directly
-(`build.sh` excludes `*/DevUnlock/*`, so `build.sh DevUnlock` gives an empty 3.5 kB assembly).
+
+By hand, in a tree (bash: Linux, macOS, Git Bash or WSL):
+```bash
+export NO_GAME="<Nuclear Option folder>"       # or NO_MANAGED=<...>/NuclearOption_Data/Managed and NO_BEPINEX_CORE=<...>/BepInEx/core
+cd reference
+(cd F22E-FCS-5.1.1    && bash build.sh Aryx_F22E_StrikeRaptor.FCS out/Aryx_F22E_StrikeRaptor_FCS.dll)   # split: also writes out/F22E_FcsCore.dll
+(cd Ifrit-FCS-1.8.3   && bash build.sh Ifrit_KR67.FCS out/Ifrit_KR67_FCS.dll)
+(cd Revoker-FCS-1.8.6 && bash build.sh Revoker_FS12.FCS out/Revoker_FS12_FCS.dll)
+(cd Compass-FCS-0.7.3 && bash build.sh Compass_TA30.FCS out/Compass_TA30_FCS.dll)
+(cd Ternion-FCS-0.5.1 && bash build.sh Ternion_FS3.FCS out/Ternion_FS3_FCS.dll)
+(cd Su30-FCS-0.7.3    && bash build.sh Su30_VXN.FCS out/Su30_VXN_FCS.dll)
+(cd Vortex-FCS-0.8.3  && bash build.sh Vortex_FS20.FCS out/Vortex_FS20_FCS.dll)     # + Rewired_Core, TextMeshPro, UI modules
+(cd Vortex-FCS-0.8.3  && bash build-family.sh out/family)                           # the Vortex Family FCS (always split)
+(cd J20B-FCS-0.2.9    && bash build.sh J20B_Weilong.FCS out/J20B_Weilong_FCS.dll)
+# the single-file layout: put UNIFIED=1 in front, e.g.  UNIFIED=1 bash build.sh Revoker_FS12.FCS out/Revoker_FS12_FCS.dll
+```
+All eight are built from **the plugin folder**. `build.sh` calls the .NET SDK's Roslyn `csc` directly (C# 9, deterministic,
+against the game's Mono assemblies); it says plainly when it cannot find the game's DLLs, BepInEx or the compiler. With the
+same inputs, `UNIFIED=1` reproduces the release DLLs byte for byte (§17); the split DLL differs from it only by the missing
+resource. The Dev DLL is compiled from `DevUnlock/FcsDevPlugin.cs` directly (`fcs.py build` does it; `build.sh` excludes
+`*/DevUnlock/*`, so `build.sh DevUnlock` gives an empty 3.5 kB assembly). `NOEMBED=1` is accepted as the old name of the split
+layout (the J-20B and Ternion used it).
+
+**Why two files and not "C# only".** A NOMNOM reviewer asked the Vortex (20 Nov) not to mix languages inside one runtime DLL.
+The author keeps the Rust core (it is about 4× faster per tick in game, §2.18), so the C# plugin is what NOMM lists and the
+core is a separate, optional file. A port can ship the main DLL alone and lose nothing but CPU time.
 
 ### 15.2 Install and release
-- Install to `BepInEx/plugins/<folder>/<dll>` with `meta.json`; keep the previous DLL as `<dll>.<prevversion>.bak`; check the
-  md5 after copying (a write can fail while other files in the same copy succeed).
-- Release folder per version: the main zip (sorting first), the optional Dev zip, `Source.*.zip` with the bench (sorting
-  last), the notes, `meta.json`.
-- **NOMM / NOMNOM:** the registry requires the multiplayer host checks for mods that change a vanilla flight model (§2.14).
-  Describe the mod in plain language for players. Players who use a modpack must update the version there (§6.1).
+- Install to `BepInEx/plugins/<folder>/<dll>` with `meta.json`, and the core `<Lib>.dll` in the same folder; keep the previous
+  DLL as `<dll>.<prevversion>.bak`; check the md5 after copying (a write can fail while other files in the same copy succeed).
+  Two FCS mods must never share a core name (Windows binds by module name): `new_airframe.py` renames it for a clone.
+- Release folder per version: the main zip (sorting first: plugin DLL + `meta.json`), the optional native-core zip, the
+  optional Dev zip, the optional unified zip, `Source.*.zip` with the bench (sorting last), the notes, `meta.json`.
+  `fcs.py build` writes the zips with these names.
+- **NOMM / NOMNOM:** list the main zip (pure C# assembly). The registry requires the multiplayer host checks for mods that
+  change a vanilla flight model (§2.14). Describe the mod in plain language for players, and say that the native core is an
+  optional download for performance. Players who use a modpack must update the version there (§6.1).
 - If the game is running, writing the DLL fails; close the game or retry the copy.
 
 ### 15.3 Build the native core
@@ -2515,36 +2691,41 @@ roll unmade (look for a cost holding a trim).
 
 ## 17. Verification status
 
-Checked when this kit was assembled (kit 4.0, 18 Nov 2026; the Vortex column re-done for kit 4.1, 20 Nov):
+Checked when this kit was assembled (kit 5.0, 27 Nov 2026), on the bench's .NET 8 with each tree's Linux native core:
 
-| Check | F-22E 4.5.1 | Ifrit 1.5.0 | Revoker 1.5.0 | Compass 0.6.0 | Ternion 0.4.2 | Su-30 0.6.5 | Vortex 0.6.2 |
-|---|---|---|---|---|---|---|---|
-| Plugin rebuilt from this folder with `build.sh`, md5 equal to the shipped release DLL (native core embedded) | ✅ `5fddd5b4…` | ✅ `8246c4ea…` | ✅ `8ed972be…` | ✅ `18bb6ccd…` | ✅ `ca471980…` | ✅ `b8028905…` | ✅ `f8005ce7…` |
-| Bench compiles from this folder, with the Linux native core (`lib<Lib>.so`), no airframe files present | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Bench flies a scripted pull-and-roll case (airframe files supplied, §5); native paths used (`FCS_NATIVE_STATS`: 0 fallbacks, 144 coupled LPs) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Same case with `NativeAllocatorCheck=2` (every solve both ways): mismatches | 0 / 2,927 | 0 / 5,302 | 0 / 5,279 | 0 / 5,303 | 0 / 5,310 | 0 / 5,281 | 0 / 4,333 ¹ |
-| STOVL case on the bench (conversion at 250 km/h, decelerate to a hover) | — | — | — | — | — | — | ✅ 252 → 3 km/h, wings level, height 309–348 m, 0 fallbacks ¹ |
-| Cloned by `tools/new_airframe.py` → game DLL (new core name embedded) and bench both build | — | — | — | ✅ | — | ✅ | ✅ |
-| Clone flies the same bench case as the reference | — | — | — | — | — | ✅ identical | ✅ STOVL case identical |
-| Windows native core rebuilt from source in the kit's environment | ❌ (§15.3: prebuilt core used) | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Plugin loaded on the game's own Mono under Wine | not re-run for kit 4.0 (kit 3.0: ✅ on all six) | | | | | | not run |
-| **This release flown in game** (its own release notes) | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ 0.6.2 bench only (0.5.11–0.6.2 all bench only); 0.1–0.5 dev builds were flown during development |
-| Kit 3.1 release of this jet flown and passed by the author (Tom, 12 Nov) | ✅ 4.3.0 | ✅ 1.3.0 | ✅ 1.4.1 | ✅ 0.5.0 | ✅ 0.4.0 | ✅ 0.6.0 | (not in kit 3.1) |
+| Check | F-22E 5.1.1 | Ifrit 1.8.3 | Revoker 1.8.6 | Compass 0.7.3 | Ternion 0.5.1 | Su-30 0.7.3 | Vortex 0.8.3 | J-20B 0.2.9 |
+|---|---|---|---|---|---|---|---|---|
+| Tree = the release's own Source zip (normalised: notes moved, airframe data and build output removed) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Plugin rebuilt with `UNIFIED=1`, byte-identical to the shipped release DLL | ⏳ ¹ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| Core file the split layout ships (`native/prebuilt/<Lib>.dll`) = the core inside the shipped release DLL ⁴ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Bench compiles from this folder with the Linux native core (`fcs.py bench <jet> build`), no airframe files present | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ ² |
+| Bench flies `fcs.py fly <jet> pull-roll` (airframe files supplied, §5): native solves, 0 fallbacks, 144 coupled LPs | ✅ 3,848 | ✅ 7,336 | ✅ 7,121 | ✅ 7,145 | ✅ 7,147 | ✅ 7,205 | ✅ 7,255 | — ² |
+| Same case with `NativeAllocatorCheck=2` (every solve both ways): differences / solves; flight CSV identical to the native run | 0 / 3,848 ✅ | 0 / 7,336 ✅ | 0 / 7,121 ✅ | 0 / 7,145 ✅ | 0 / 7,147 ✅ | 0 / 7,205 ✅ | 0 / 7,255 ✅ | — |
+| STOVL case (`fcs.py fly vortex hover`: conversion at 250 km/h, decelerate to a hover) | — | — | — | — | — | — | ✅ 252 → 6 km/h, height 300–347 m, check=2: 0 / 58,737 | — |
+| Cloned by `fcs.py new` → bench builds, and the clone flies the same case as its reference (identical CSV) | ✅ ³ | — | ✅ | — | — | — | ✅ STOVL case | — |
+| Shared files (`fcs.py check`) | `AsymCap.cs`, `CoupledCap.cs` identical on all eight; `AsymShared.cs` in five texts (F45) | | | | | | | |
+| **This release flown in game** (its own notes) | ✅ 26 Nov (23:20 / 23:29 logs; log check: chatter and stuck-pose fixes working; one open high-AoA reversal sideslip) | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ bench only | ❌ not benched, not flown |
+| Kit 3.1 release of this jet flown and passed by the author (Tom, 12 Nov) | ✅ 4.3.0 | ✅ 1.3.0 | ✅ 1.4.1 | ✅ 0.5.0 | ✅ 0.4.0 | ✅ 0.6.0 | (not in kit 3.1) | (not in kit 3.1) |
 
-¹ Vortex, kit 4.1: `bench.sh fly ias=400 alt=1500 thr=1 T=6 pitch=0:0,0.2:1 roll=0:0,0.2:1`, run on 0.5.10 and 0.6.2. The
-output is byte-identical between them (no CTOL change since 0.5.10). Kit 4.0's 5,279 for this column came from a run whose
-arguments were not recorded. The STOVL case: `NativeAllocatorCheck=2` 0 mismatches over 33,022 solves. It stops 70 m shorter on 0.6.2 (1,611 vs 1,681 m),
-from the 0.6.0 lever-stop change.
-The 0.6.2 Windows core was checked against 0.6.1's by its author on Windows (0 output differences, §15.3). The kit only checks
-the embedded copy's sha256 (`e20c7b99…`).
+¹ The game's `Managed` and `BepInEx/core` folders were not available to this build of the kit, so no plugin DLL was compiled
+here: neither the byte-for-byte check nor `fcs.py build` / the patched `build.sh` against the game's assemblies. The source is
+each release's own, and its plugin code is unchanged; the build scripts changed (§15.1). The split layout's main DLL is the
+J-20B's `NOEMBED` build pattern, which shipped as its C#-only zip; its core file is checked in the row above. Run
+`python fcs.py build <jet> --unified --check <the release DLL>` to make the check on your machine.
+² The J-20B bench flies only from a `j20_airframe.json` extracted from Reasonix's mod (not in the kit, none on hand here). With
+any other airframe file the FCS waits for the mod's surface system and the run stops (§3).
+³ The F-22E clone's bench did not compile before the kit 5.0 fix to the clone tool (F46).
+⁴ Read out of each release DLL's resources with `dnfile` and compared byte for byte. sha256: F-22E `3629970b`, Ifrit
+`d2fe30b4`, Revoker and J-20B `0f400537` (the same core), Compass `180cc697`, Ternion `27393d13`, Su-30 `78d19a80`, Vortex
+`e20c7b99` (also the Vortex Family's `VortexFamily_FcsCore.dll`).
 
-What that means for you: the source here *is* exactly what the seven releases run. The kit 3.1 releases of the first six jets
-were flown and passed by the author; the releases since (shared asymmetric-load code, engine-out zero-thrust match and
-recovery thrust, the Su-30's drag and limits, the Revoker's yaw-nozzle gate, and the whole Vortex up to 0.6.2) are compiled and benched,
-and their release notes (`release-notes/` in each tree) give each one's own status. **The bench is an approximation and may
-not be accurate:** where a bench number and the game disagree, the game is the reference. The bench is good for direction and
-A-vs-B regressions, never for absolute numbers (§10.7). The Compass bench has no flight-log calibration; the Ternion's has one
-log (§10.8); the Vortex's STOVL side is modelled from the game's code (`SwivelDuctSystem`), not calibrated against a log.
+What that means for you: the source here *is* the source of the eight releases. The kit 3.1 releases of the first six jets were
+flown and passed by the author; F-22E 5.1.1 has been flown, and the other releases since are compiled and benched (their
+`release-notes/` say so one by one). **The bench is an approximation and may not be accurate:** where a bench number and the
+game disagree, the game is the reference. The bench is good for direction and A-vs-B regressions, never for absolute numbers
+(§10.7). The Compass bench has no flight-log calibration; the Ternion's has one log (§10.8); the Vortex's STOVL side is
+modelled from the game's code (`SwivelDuctSystem`), not calibrated against a log; the F-22E 5.1.1 bench under-predicted one
+logged high-AoA reversal's sideslip (12.6° against 23.9°).
 
 [↑ Contents](#contents)
 
@@ -2579,6 +2760,12 @@ log (§10.8); the Vortex's STOVL side is modelled from the game's code (`SwivelD
 | **Push plan** | the push-over's pitch rate planned once at the start from the yaw the jet can shed |
 | **rudW** | how much of the yaw can be added without spending roll |
 | **TVC** | thrust vectoring: steering the engine nozzle to make pitch/roll/yaw moment |
+| **Split layout / unified DLL** | kit 5.0's two ways to ship a plugin: the C# DLL with the Rust core as a separate file beside it (default, what NOMM lists), or one DLL with the core inside (optional) |
+| **Coplanar stab** | an all-moving tail in the same plane as the wing and close behind it (F-22 / F-35 style), as opposed to a tail set low under the wing |
+| **Two-zone stab** | the F-22E's model of a coplanar stab: the inner half in the wing's turned flow, the outer half in free air with forebody upwash, so it stalls progressively (§24.11) |
+| **Neutral point** | the point the lift change acts through when the AoA changes; behind the CG = stable, ahead = relaxed / unstable (§21.3) |
+| **Horizon objective** | F-22E 5.1.0+: the allocator scores each candidate plan by its cost over the next second, so it can leave a stuck stab pose by itself |
+| **`fcs.py`** | the kit's front-door command (§4.0) |
 | **STOVL / VTOL / CTOL** | short take-off and vertical landing / vertical take-off and landing / conventional take-off and landing (normal wing-borne flight) |
 | **Lift fan, roll posts, swivel nozzle** | the FS-20 Vortex's lift system: a fan behind the cockpit blowing down, small downward jets in each wing for roll, and a three-bearing nozzle that turns the main exhaust from aft to straight down |
 | **Conversion** | switching between wing-borne (CTOL) and jet-borne (STOVL) flight; on the Vortex by holding Flight Assist |
@@ -2619,7 +2806,8 @@ log (§10.8); the Vortex's STOVL side is modelled from the game's code (`SwivelD
 ## 19. Problem and solution log
 
 Everything found and done since the first kit: §19.1–19.7 cover kit 1 (5 Nov 2026: F-22E 3.0.1, Ifrit 0.16.0, Revoker 0.8.2)
-to kit 2.0 (10 Nov); §19.8–19.14 cover kit 2.0 to this edition (12 Nov). One entry per problem: what was seen, what caused it, what was done, and how far it is verified. "Bench" means
+to kit 2.0 (10 Nov); §19.8–19.14 kit 2.0 to 3.0 (12 Nov); §19.15–19.22 kit 4.0 (18 Nov); §19.23 kit 4.1 (20 Nov); §19.24 kit 5.0
+(27 Nov). One entry per problem: what was seen, what caused it, what was done, and how far it is verified. "Bench" means
 the offline simulator only; "flown" means Tom flew it in game. Quotes are Tom's. The full notes for each version are in the
 jet's `release-notes/` or `CHANGELOG.md`; findings documents are named where they exist.
 
@@ -3179,6 +3367,94 @@ Seventeen releases in two days, all STOVL except two. The design is in §8.27. T
 - **Status:** every release benched, none flown as that version (each release's notes). The caution box has not been seen on a
   screen in any of the notes.
 
+### 19.24 Kit 4.1 → kit 5.0 (20–26 Nov): every jet, and the J-20B
+
+One line per release; each tree's `release-notes/` has the problem, the cause, the bench tables and the flight status.
+Unless a line says "flown", the release is compiled and bench-tested only.
+
+**Shared across the fleet** (ported as the same code, jet by jet):
+- **Governor fix from F-22E 4.5.2 / 4.5.3:** the roll window binds when roll is saturated. On a pitch release with lateral stick
+  in, the TVC takes the pitch and the stabs stay on the roll.
+- **Roll-rate cap from the hold allocation** (F-22E 4.7.0, Revoker 1.7.0; the interim "half the yaw span" in F-22E 4.6.7,
+  Revoker 1.6.9, Su-30 0.6.6): the cap reads the yaw capacity the allocator really has while holding the roll.
+- **Roll cap fix with the pitch-rate budget on the AoA rate** (Ifrit 1.8.0, Su-30 0.7.0, Vortex 0.8.0, Compass 0.7.0).
+- **Pull trade against the roll the jet has**, not the roll commanded (Compass 0.7.1, Ifrit 1.8.1, Revoker 1.8.1, Su-30 0.7.1,
+  Vortex 0.8.1).
+- **The push-governor rule** (shared from the J-20B 0.2.4; Compass 0.7.2, Ifrit 1.8.2, Vortex 0.8.2), and **a released roll no
+  longer carries on into a push** (F-22E 4.7.1, Revoker 1.8.5, Su-30 0.7.2).
+- **The AoA law's flight-path rate without the filter leak** (`FlightPathRateMatched`; from J-20B 0.2.7, then every jet:
+  F-22E 4.7.2, Ifrit 1.8.3, Revoker 1.8.6, Compass 0.7.3, Ternion 0.5.1, Su-30 0.7.3, Vortex 0.8.3). The flight-path rate was the
+  pitch rate minus a 50 ms-filtered AoA rate. Half of any 1–2 Hz pitch wobble leaked back into the pitch command as positive
+  feedback, which became a 1.7 Hz limit cycle on the J-20B with a wing shot off. The pitch rate now gets the same filter.
+- **Ternion 0.5.0** brought the Ternion up to the fleet's current governor and allocator laws in one step.
+
+**F-22E 4.5.1 → 5.1.1**
+- 4.6.0: **slats with their own physics** (`SlatAero` / `SlatForce`). The slats become allocator effectors in 4.6.1 (slat roll).
+- 4.6.1–4.6.5: "airframe W", the first attempt at F-35-like stab behaviour (wake-exit downwash). The author called it a failed
+  attempt; 4.6.5 went back to X2e with the governor fix and the improved slats.
+- 4.6.6–4.7.2: the slat-roll regressions fixed in the laws, the roll-rate cap (above), a released roll no longer carries into a
+  push, the flight-path-rate fix.
+- 4.8.0–4.8.13: **the two-zone coplanar-stab airframe** (§24.11). Built as a switch (4.8.0), tuned for pitch authority, low-speed
+  AoA, the TVC-off pitch rate and twitching effectors (4.8.1–4.8.8). 4.8.9 gives X2e's trim up to mid AoA. 4.8.10–4.8.11 honour
+  the no-TVC caps as set and make them 55 / 50; the two-zone airframe is on by default from 4.8.11. 4.8.12 moves the whole-stab
+  stall to 20°, and 4.8.13 removes the sideslip that added (the author found it "good enough").
+- 4.8.14–4.8.17: the no-TVC overshoot past +55°. The capture planned with 2–3× the braking the jet has near 55°; 4.8.15 learns
+  it. A stab stuck in a reverse-roll pose after bleeding to low AoA (4.8.17).
+- 5.0.0–5.1.1: **the allocator made robust against stuck stab poses.** 5.0.0 adds a pair-complete search (off by default,
+  `PairAllocator`). 5.0.1–5.0.2 add a basin screen, which the author found "not a very clean" fix. 5.1.0 replaces it with a
+  **horizon objective**: each plan is scored by its own cost over a 1 s horizon. 5.1.1 removes the chatter that 5.1.0 brought:
+  a branch candidate must cross a fold, and the 2.42 rule picks between the destination and reach plans. Bench: 108 raw stab
+  reversals against 5.1.0's 228; the logged traps escape in 0.5 s or never form. **Flown 26 Nov** (23:20 / 23:29 logs): stab
+  command flips per minute fell from 28–31 to 14–24, with one horizon branch taken in a real trap and recovered. Open: a 23.9°
+  sideslip in a high-AoA roll reversal at 600 km/h that the bench under-predicts (12.6°).
+
+**KR-67 Ifrit 1.5.0 → 1.8.3:** the F-22E 4.5.2 / 4.5.3 port, surfaces paired by position, and a canard law for the Multirole MTD
+variant (1.6.0). Canard travel 60, a 70° AoA limit for canard jets, the low-thrust cap from the real nose-down, a bounded
+full-aft override and governor yaw pairs (1.7.0). The HUD's AoA-limit marker on canard jets (1.7.1). Then the shared
+1.8.0–1.8.3.
+
+**FS-12 Revoker 1.5.0 → 1.8.6:** the F-22E port, with the canard window replaced by an allocator price (1.6.0). The EF-2000
+Typhoon mod's panels are posed from the Revoker's surfaces, render-only (1.6.1–1.6.4, 1.7.1, 1.8.2–1.8.4, the inner flaperons
+taking three attempts). The TVC-off AoA limit is exactly `NoTvcAoACap*` (1.6.5–1.6.6). The AoA holds while rolling at the limit
+with no nozzle moment (1.8.0). The pull-to-limit overshoot with TVC off (1.8.2). Then the shared lines.
+
+**T/A-30 Compass 0.6.0 → 0.7.3, FS-3 Ternion 0.4.2 → 0.5.1, Su-30VXN 0.6.5 → 0.7.3:** the shared lines above.
+
+**FS-20 Vortex 0.6.2 → 0.8.3**
+- 0.6.3–0.6.6: the released vertical-speed stick's stop, with the spool lag planned. In 0.6.6 the stop margin comes from the fit's
+  own error as a Gauss-Markov process, so the jet no longer rests a few ft/min short.
+- 0.6.6 was also briefly shipped as a pure-C# DLL plus a native build, after a NOMNOM reviewer's request. The author kept the
+  Rust core, and 0.6.7 went back to one DLL. Kit 5.0's two-file default (§15.1) is the settled answer.
+- 0.6.7–0.6.9: **one learned aero model** for the STOVL laws. The laws now read the CG's own acceleration instead of the root
+  body's, which carried the pitch acceleration times the lever arm; height wander in translations and stops roughly halved to a
+  third. 0.6.9 adds braking priority when the thrust can't cover everything.
+- 0.6.10: a stick pull after a STOVL landing takes off again.
+- 0.6.11: the F-22E's push governor.
+- 0.7.0–0.7.3: support for the **FS-20 Vortex Family** mod's five jets (B, A, C, T, NA). The FCS owns each jet while engaged, its
+  airframe changes apply only where the geometry matches the stock B (`GeomGate`), and there is a separate **Vortex Family FCS**
+  built from the same source (`build-family.sh`: pure C# plus its own optional core). A code fingerprint decides which plugin
+  flies the family jets when both are installed. The fingerprint is `tools/gen_buildinfo.py`, with
+  `// FAMILY-FP EXCLUDE BEGIN / END` for B-only code in shared files.
+- 0.8.0–0.8.3: the shared lines.
+
+**J-20B Weilong 0.1.0 → 0.2.9 (new):** forked from Revoker 1.6.0 for Reasonix's mod, which moves its surfaces with its own
+`AeroControl` scripts instead of game `ControlSurface`s. Milestones:
+- the hinge bridge, the forebody vortex lift and the air brakes (0.1.0);
+- pitch-only canards with 40° held within about ±0.5° in rolls (0.1.4), and trailing-edge camber coupling done properly (0.1.5);
+- the CG 0.75 m ahead of the mains (0.1.8);
+- a 45° AoA limit that holds through rolls and loops (0.2.0), the pull-through under full roll (0.2.1), held push-overs
+  (0.2.2), roll release then push (0.2.3);
+- the air brake in flight without a nose dip or roll drift (0.2.5–0.2.6);
+- the wing-shot-off pitch limit cycle that found the flight-path-rate leak (0.2.7);
+- mod 0.0.5 support (0.2.8), with 0.0.4's tuned mass layout restored (0.2.9).
+
+Its releases shipped as three zips from the start: the single-file DLL, a C#-only DLL and an optional core, the pattern kit 5.0
+makes standard.
+
+**The kit itself:** `fcs.py` (the front door), the split build, `NO_GAME` everywhere, path-relative F-22E batteries, a
+friendlier clone tool (`fcs.py new`, F46 fixed), `tools/maint/import_release.py`, the J-20B bench core name (F47), the
+shared-file check (`fcs.py check`, F45), §24.11, and design rules 22–25.
+
 [↑ Contents](#contents)
 
 ## 20. History and further reading
@@ -3193,8 +3469,8 @@ Seventeen releases in two days, all STOVL except two. The design is in §8.27. T
 - `docs/design-history/F22E_FCS_handoff_2.31.0.md`: the F-22E state at 2.31.0.
 - `reference/<Jet>/native/README.md`: the native core's rules, build and checks (F-22E's is the fullest).
 - `docs/design-history/F22E_airframe_X2_handoff_2026-11-09.md`: the build hand-off for the F-22E's X2 airframe (goals, decision,
-  acceptance targets, phase 2), with the study kit in `reference/F22E-FCS-4.5.1/studies/x2_study_kit/`.
-- Documents named `claude/...md` in this manual are the author's project notes (6–20 Nov findings); they are not in the kit, and
+  acceptance targets, phase 2), with the study kit in `reference/F22E-FCS-5.1.1/studies/x2_study_kit/`.
+- Documents named `claude/...md` in this manual are the author's project notes (6–26 Nov findings); they are not in the kit, and
   what they found is summarised in §8, §10.7–10.8 and §19.
 - Each reference tree's `release-notes/` and its `README.md` / `bench/CALIBRATION*.md` / `bench/DAMAGE.md`.
 
@@ -3208,13 +3484,17 @@ governor) → 0.16 → 0.17 (push-over hand-offs) → 1.0.0 (several cores) → 
 1.0.0 → 1.4.1 → 1.5.0. Compass 0.1.0 (5 Nov, fork of Revoker 0.8.2) → 0.1.12 → 0.2.0 → 0.5.0 → 0.6.0. Ternion 0.1.0 (7 Nov, fork of Compass
 0.1.11) → 0.1.12 → 0.2.0 → 0.4.0 → 0.4.2. Su-30 0.1.0 (7 Nov, fork of Ternion 0.1.8) → 0.2.3 (10 Nov) → 0.6.0 (12 Nov) →
 0.6.5 (17 Nov). Vortex 0.1.0 (16 Nov, clone of Revoker 1.4.2) → 0.3.0 (shared code) → 0.5.10 (18 Nov) → 0.6.0 (20 Nov) →
-0.6.2 (reproducible core).
+0.6.2 (reproducible core) → 0.6.7 (one aero model) → 0.7.x (Vortex Family) → 0.8.3. J-20B 0.1.0 (23–24 Nov, clone of Revoker
+1.6.0) → 0.2.0 → 0.2.9. F-22E → 4.6.0 (slat physics) → 4.8.x (two-zone coplanar-stab airframe) → 5.0–5.1.1 (robust allocator,
+horizon objective). Ifrit → 1.8.3, Revoker → 1.8.6, Compass → 0.7.3, Ternion → 0.5.1, Su-30 → 0.7.3 (the shared laws).
 
 **Kit editions:** 1.0 (5 Nov 2026: F-22E 3.0.1, Ifrit 0.16.0, Revoker 0.8.2); 2.0 (10 Nov 2026: six jets, §19.1–19.7); 3.0
 (12 Nov 2026: F-22E 4.3.0, Ifrit 1.3.0, Revoker 1.4.1, Compass 0.5.0, Ternion 0.4.0, Su-30 0.6.0; native core, coupled check,
 loaded reversals, flying backwards, ground brakes; §19.8–19.14); 3.1 (12 Nov 2026: Part IV, §21–24); 4.0 (18 Nov 2026:
 F-22E 4.5.1, Ifrit 1.5.0, Revoker 1.5.0, Compass 0.6.0, Ternion 0.4.2, Su-30 0.6.5 and the new Vortex 0.5.10; shared
-asymmetric-load code, engine-out zero-thrust match, STOVL; §19.15–19.22); 4.1 (20 Nov 2026: Vortex 0.6.2; §19.23).
+asymmetric-load code, engine-out zero-thrust match, STOVL; §19.15–19.22); 4.1 (20 Nov 2026: Vortex 0.6.2; §19.23); 5.0 (27 Nov
+2026: F-22E 5.1.1, Ifrit 1.8.3, Revoker 1.8.6, Compass 0.7.3, Ternion 0.5.1, Su-30 0.7.3, Vortex 0.8.3 and the new J-20B 0.2.9;
+the split build, `fcs.py`, §24.11; §19.24).
 
 [↑ Contents](#contents)
 
@@ -3396,7 +3676,7 @@ $\ddot\alpha_\text{max}$ in the current state: thrust, nozzle angle, stall, load
 
 A **gain schedule** stores tuned numbers per flight condition (speed, AoA, altitude) and interpolates. It works on a known,
 undamaged aircraft. This FCS reads authority and limits from the **live** state instead: surface models at their actual local
-AoA, live thrust, measured accelerations (design rule 1, README §14). The payoff is that one law works across seven very
+AoA, live thrust, measured accelerations (design rule 1, README §14). The payoff is that one law works across eight very
 different airframes, with damage and stores, without retuning tables per jet. The price is complexity: every model has to be
 right, and the bench has to check it.
 
@@ -3416,7 +3696,7 @@ right, and the bench has to check it.
 
 ### 22.1 The loop every change went through
 
-About 800 builds (Sept–Nov 2026), over 270 release notes across the seven jets, each through the same loop:
+About 800 builds (Sept–Nov 2026), close to 400 release notes across the eight jets, each through the same loop:
 
 1. **Report.** The pilot flies and describes what felt wrong, in his words, with the flight log (`Telemetry` CSV, one row per
    tick, 260+ columns) and `LogOutput.log`.
@@ -3451,6 +3731,7 @@ bench, each jet's release.
 | Simulate | the bench (`dotnet bench.dll`, .NET 8), the ground models in `bench/groundsim/` (Python) |
 | Analyse logs and bench output | Python with pandas / numpy / scipy; ~40 scripts in each `bench/an/` |
 | Manual | pandoc + Playwright Chromium (`tools/build_manual_pdf.py`) |
+| Everyday front door (kit 5.0) | `fcs.py`: build + package, bench build / fly presets / replay / suites, readouts with curve checks, clone, `doctor` (README §4.0) |
 
 ### 22.3 Why an LLM agent was the better fit for this project
 
@@ -3488,7 +3769,7 @@ checks and the next flight are what caught those, not the agent.
 Porting from this kit without an LLM is realistic; developing new laws at this pace is not. What to expect, and how to keep
 it manageable:
 
-- **Time.** Rough estimates, not tested with a human porter: a jet close to one of the seven references (same kinds of
+- **Time.** Rough estimates, not tested with a human porter: a jet close to one of the eight references (same kinds of
   effectors) flies sanely after days of work and reaches reference quality after weeks of flying and logs. A new effector type
   (canted nozzles, an unusual surface) means understanding the allocator and the capacity estimator: weeks to months.
 - **Size.** `FcsController.cs` is 11,400 lines on the F-22E, with 326 config bindings. Read `Tick` top to bottom once (README
@@ -3499,7 +3780,7 @@ it manageable:
   and its relatives, `Camber`, `AirfoilTable`), the native kernels and their load-time self-test twin no longer match your C#,
   and the self-test **still passes** (it compares the kernel to its twin, not to your new code). Turn the kernels off
   (`NativeTables=false`, `NativeSweep=false`) or keep the Rust in sync (`native/README.md`).
-- **One jet at a time.** A fix you make on your jet stays on your jet. Don't try to keep a port in step with all seven
+- **One jet at a time.** A fix you make on your jet stays on your jet. Don't try to keep a port in step with all eight
   references; take the reference's newer release notes as a list of things to consider.
 - **The bench is required, not optional.** Without it, every test is a flight. Build the bench model (README §9.2), check it
   against one flight log before trusting it, and reuse `bench/an/` scripts rather than writing new ones.
@@ -3518,7 +3799,7 @@ it manageable:
 
 The FCS can only use the authority the airframe gives it. Most of the hard problems in §8 and §19 were partly airframe
 problems. This section collects what was learned about shaping a Nuclear Option airframe so a real FCS can fly it well.
-Every recommendation names the jet and the evidence. These are lessons from seven airframes, not universal targets.
+Every recommendation names the jet and the evidence. These are lessons from eight airframes, not universal targets.
 
 ### 24.1 What the game models, and what it leaves out
 
@@ -3640,7 +3921,7 @@ Add vortex lift only with a pitch check across the whole AoA range (§24.2), and
 
 ### 24.10 Configurations not done yet
 
-Six of the seven reference jets are conventional take-off jet fighters with fixed wing geometry; the Vortex adds **STOVL**
+Seven of the eight reference jets are conventional take-off jet fighters with fixed wing geometry; the Vortex adds **STOVL**
 (§8.27), for one lift system: the FS-20's lift fan, roll posts and three-bearing swivel nozzle. Configurations that **none of
 them covers** yet, and what each would need beyond this kit (expectations, not tested):
 - **Other VTOL / STOVL systems** (lift jets, reaction-control puffers, tilt-rotors, a Harrier-style four-nozzle layout): the
@@ -3656,9 +3937,129 @@ them covers** yet, and what each would need beyond this kit (expectations, not t
   the Revoker and Ternion, but not with a strongly unstable layout.
 - **Propeller aircraft:** torque, P-factor and slipstream over the tail are not modelled.
 - **Thrust reversers, independent 3D nozzles, or more than two engines:** the TVC effectors and the engine-out logic assume
-  what the seven jets have.
+  what the eight jets have.
 
 If you port to one of these, expect new effector types, new failure modes and new laws, not just a port. Please share what you
 find: it is how this solution library grew.
+
+### 24.11 F-22-style coplanar stabs: aerodynamics and stability margin
+
+This is for aircraft whose all-moving stabs sit **in the wing's plane and close behind it**: F-22 / F-35-like layouts, and
+similar designs where the tail is not set low under the wing. It is what the F-22E reached after the 23–26 Nov airframe work
+(F-22E 4.8.0–4.8.13, on by default since 4.8.11 as `TwoZoneAirframe`). Start a port of such a jet from the **f22e** reference
+(`python fcs.py new --from f22e ...`), which carries all of it.
+
+**Status, honestly.** The physics below is the author's reading of real F-22 / F-35 demo footage, turned into a bench model.
+No wind-tunnel data went into it, and the numbers in the model (zone share, upwash, stall point) were chosen to match
+behaviour, not measured. F-22E 5.1.1 flies it and was flown on 26 Nov; the 4.8.x builds that shaped it were bench-tested,
+and their notes say which were flown.
+
+#### What a coplanar tail does differently
+
+A low-set tail (a fourth-generation layout such as the Super Hornet's) stays in the wing's **downwash**, the air the wing turns
+down behind it. That flow lowers the tail's own AoA, so it stalls late and keeps rolling the jet even at 45°. The F-22E's older
+X2e airframe was built like that (downwash 0.6 to 45°, fading out by 60°). The author rejected X2e as the answer for this
+layout, because it models a legacy tail.
+
+A coplanar, close-coupled tail behaves differently:
+- **The wing's influence is strongest at low AoA and fades as the wake rises above the tail.** By the high 20s to low 30s of
+  body AoA the stab is mostly in free air. That is where the real jets' stabs visibly stop helping the roll and start
+  reversing it.
+- **The outer part of the stab sees free air early,** plus some upwash from the forebody and chines. The inner part, next to
+  the fuselage, is still in the wing's turned flow. So the stab does not stall all at once.
+- **A stalled stab is a flat plate.** Its force stays almost level past the stall (the normal-force plateau), so moving it
+  further trailing-edge down changes pitch little but adds drag far aft and outboard. That drag yaws the jet into the roll,
+  which is most of a velocity-vector roll at 30°+ AoA. Moving it back toward attached flow dumps its force. This is why a big
+  stab split barely moves the pitch at high AoA unless one stab stays near neutral.
+- **Nose-down survives the stall.** The footage shows the stabs still driving the nose down at 50–55° and low speed, because
+  the stalled plate's force is large and far aft.
+
+Nuclear Option has **no interference between parts**: every part reads its own lift chart at its own free-stream AoA (§24.1).
+So each of these effects must be added as a model, and it must be mirrored in the FCS's own tables (§24.9 step 3).
+
+#### The model that flies (F-22E 5.1.1 defaults)
+
+| Piece | Setting | What it does |
+|---|---|---|
+| Two-zone stab | `TwoZoneAirframe` on; outboard share 0.5 (`StabOutFrac`); upwash 0.24 × AoA (`TwoZoneStabUpwash`) | the inboard half flies in the wing's turned flow (downwash 0.6), the outboard half in free air plus upwash |
+| Whole-stab stall at ~20° body AoA | `TwoZoneStabStallAoA` 26.5 (local), `TwoZoneStabCLScale` 1.36 | the stab averaged over both zones peaks at 20°; the CL scale keeps the old 25° stab's peak force (the lift slope is 25 % steeper) |
+| Post-stall plate | plate curve with a shallow dip (0.9, width 12°) | the normal-force plateau above |
+| Fore / aft body lift | the X2-style schedules (§8.15), refitted for the two-zone tail (`TwoZoneLiftRefit` 0.25, `TwoZoneLowAoAUnstable` on) | sets the pitch curve without changing total lift or drag (§24.3) |
+| Slats with their own physics | `SlatPhysics` on, `TwoZoneSlatAftGain` 0.55 | the slats keep the flow attached over the aft wing and body. That balances the LERX lift, which would otherwise out-lift the stabs at some AoA and leave a band with no nose-down (the author found this band in his own SimplePlanes tests) |
+| Fins blanked | `FinBlanking` on, from 38° to 46° body AoA (`FinBlankAoA0` / `1`), floor 0.5 | the twin fins lose effect in the low 40s, as the author reads the footage (no rudder toe-in in a high-AoA hold) |
+| Stall order | stabs ~20°, inner flaperons ~35°, outer ~45° | staggered so roll authority has no hole (§24.4); the flaperons have roll priority |
+| AoA limits | 65 / 50 with TVC; **55 / 50 without** (`NoTvcAoACap*`, 4.8.11) | what the airframe alone can hold |
+
+#### The stability margin to aim for
+
+The margin below is the **neutral point's distance behind the CG**. Positive means stable (the nose wants to go back down when
+the AoA rises); negative means relaxed or unstable. On a jet the size of the F-22E (about 19 m long), 0.1 m is about 0.5 % of its
+length. Past about 40° the normal force peaks, so the ratio stops meaning anything. Read the **pitch stiffness** there instead
+(dq̇/dα, the change in pitch acceleration per degree of AoA; negative is stable).
+
+Measured for this kit on the F-22E 5.1.1 bench (`bench cmsweep`, 400 km/h, stabs and flaperons at 0, slats on schedule, no
+thrust; central difference over ±1°). "Cal" is the bench's log-calibrated frame (31 Oct fit); "model" is the game's aero as
+written, at the nominal CG.
+
+| Body AoA | Neutral point, cal / model (m) | Pitch accel with stabs at 0, cal / model (°/s², + = nose-up) | Full nose-down stab, 400 / 250 km/h (°/s²) |
+|---|---|---|---|
+| 2–10 | −0.29 to −0.40 / −0.46 to −0.56 | +5 to +24 / +8 to +38 | −144 (0°) to −66 (12°) / — |
+| 16–20 | +0.36 to +0.51 / +0.20 to +0.35 | +20 to +8 / +40 to +32 | −56 to −54 / −21 (20°) |
+| 24–30 | +0.55 to +0.65 / +0.39 to +0.49 | −5 to −25 / +23 to +7 | −54 to −57 / −21 to −22 |
+| 32–36 | +0.73 to +1.02 / +0.57 to +0.86 | −32 to −47 / +1 to −13 | −60 to −65 / −23 to −25 |
+| 38–40 | −0.50 to −1.98 / −0.66 to −2.14 (pitch-up band) | −47 to −44 / −12 to −8 | −52 / −21 (40°) |
+| 44–55 | stiffness −4 to −10 °/s² per ° at 44–48°, +3 at 52°, −2 at 55° | −46 to −79 / −10 to −47 | −46 to −69 / −18 to −27 |
+
+For comparison, measured in the 25 Nov study (`F22E_4.8.2_static_margin`, same method):
+- Aryx's stock F-22E: about +0.20 m at 0–10°.
+- X2e (the legacy-tail airframe, §8.15): −0.04 to −0.28 m at 0–18°, about neutral from 20 to 34°, a pitch-up band at 35–39°,
+  stable from 40°.
+- The first two-zone build (4.8.2, 25° stab stall): +0.04 to +0.10 m at 4–16°, most stable at 22–26° (+0.2 to +0.36 m), a
+  pitch-up band at 32–38°, stable from 40°.
+
+The author then set the target on 26 Nov: unstable at low AoA, neutral from 20 to 28°, unchanged past 28°, with X2e's trim up
+to mid AoA. 4.8.9's refit and 4.8.12's 20° stall moved it there. In this static sweep 5.1.1 comes out **stiffer at 16–36° than
+"neutral"** (+0.2 to +1.0 m). Part of that is the stab stall itself, and the flaperons carry part of the high-AoA trim in flight
+(the allocator balances it), which a stabs-at-zero sweep does not see. If you port this airframe, measure your own jet the same
+way rather than copying these numbers.
+
+**Recommendations for a coplanar-stab jet**, from what the F-22E flew:
+1. **Relaxed at low AoA:** neutral point 0.1–0.4 m ahead of the CG at 0–12° (slightly unstable). Turns start with a nudge of the
+   stabs, then the stabs sit near neutral. The FCS's INDI loop flies this without effort. Don't use a forward CG as AoA
+   protection (§24.2).
+2. **Stable from the stab's stall up to about 36°.** The stab stall at ~20° and the wake leaving the tail give the airframe its
+   own nose-down there. That is what lets it hold the AoA limit with TVC off.
+3. **Keep a pitch-up band short, and cover it.** A band where the wing peaks and the stab has already stalled (35–40° here) is
+   acceptable only while full nose-down beats it at your slowest speed there. The guideline the F-22E work used is 14–17 °/s²
+   (0.24–0.3 rad/s²) at 40–50°. The F-22E has −21 °/s² at 250 km/h and −52 at 400. X2e had −72 at 400 km/h, several times what
+   is needed.
+4. **Stable past ~44°,** so the AoA limit has something to lean on without TVC.
+5. **A neutral stab can only trim where the lift-weighted average margin from zero lift up to that AoA is about zero** (the
+   9 Nov constraint, §8.15). "Trim-free up to X" and "relaxed up to X" are the same requirement. A clearly stable low-AoA
+   margin forces an unstable band somewhere above it.
+
+#### What not to do on this layout
+
+- **Don't put the whole stab's stall below ~18–20° to get the roll reversal.** An earlier stall moves the stall knee closer to
+  trim. In the 2.2.13 study that gave 2–3× the pitch-up from a roll split and pulled the trim off neutral. The 20° stall worked
+  only together with a steeper lift slope that kept the peak force (`TwoZoneStabCLScale`), a refit of the fore / aft lift, and
+  the 4.8.13 fix to the stabs' nose-down travel. Before that fix, the no-TVC rolling pull fell from 139 to 91 °/s at 36°.
+- **Don't model a legacy downwash schedule** (downwash to 45°) on a coplanar tail. It keeps the stab rolling to 45° and hides
+  the reversal the real jets show.
+- **Don't add forebody / LERX vortex lift on top of body lift** without a pitch check. On the F-22E it made the jet nose-up past
+  24° and untrimmable at 32–40° (§24.6).
+- **Don't use the fins as a trim carrier at high AoA:** they are blanked past the low 40s.
+
+#### Measure your own
+
+```bash
+python fcs.py bench <your jet> build
+cd reference/<your jet>/bench
+dotnet bin/bench.dll cmsweep ias=400 a0=-1 a1=57 da=1            # pitch accel, Cm·S·c and CN·S per AoA, stabs at 0
+dotnet bin/bench.dll cmsweep ias=250 a0=20 a1=56 da=4 stab=-30   # full nose-down stab (stab=+35: nose-up)
+```
+The neutral point is −Δ(Cm·S·c) / Δ(CN·S) over ±1°, in metres. Repeat it in the model frame (the `Mis*=1 CgAftShift=0` keys)
+and at a few speeds. The pitch accelerations scale with dynamic pressure; the margin does not (the game has no Mach effect on
+lift).
 
 [↑ Contents](#contents)
