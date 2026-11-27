@@ -3952,9 +3952,10 @@ similar designs where the tail is not set low under the wing. It is what the F-2
 (F-22E 4.8.0–4.8.13, on by default since 4.8.11 as `TwoZoneAirframe`). Start a port of such a jet from the **f22e** reference
 (`python fcs.py new --from f22e ...`), which carries all of it.
 
-**Status, honestly.** The physics below was inferred from real-jet demo footage and turned into a bench model. The aim is at
-least to match how jets with this layout generally behave; copying any one aircraft exactly is not necessary. No wind-tunnel data went into it, and the
-numbers in the model (zone share, upwash, stall point) were chosen to match that behaviour, not measured. F-22E 5.1.1 flies it and was flown on 26 Nov; the 4.8.x builds that shaped it were bench-tested,
+**Status, honestly.** The physics below was inferred from real-jet demo footage and research papers, then turned into a
+bench model. It does not reproduce the real aircraft's aerodynamics exactly: it is informed guesswork that aims at least to
+match how jets with this layout behave in general. The numbers in the model (zone share, upwash, stall point) were chosen to
+match that behaviour, not measured. F-22E 5.1.1 flies it and was flown on 26 Nov; the 4.8.x builds that shaped it were bench-tested,
 and their notes say which were flown.
 
 #### What a coplanar tail does differently
