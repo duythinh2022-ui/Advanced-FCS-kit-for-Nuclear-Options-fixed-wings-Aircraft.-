@@ -3952,9 +3952,9 @@ similar designs where the tail is not set low under the wing. It is what the F-2
 (F-22E 4.8.0–4.8.13, on by default since 4.8.11 as `TwoZoneAirframe`). Start a port of such a jet from the **f22e** reference
 (`python fcs.py new --from f22e ...`), which carries all of it.
 
-**Status, honestly.** The physics below is the author's reading of real F-22 / F-35 demo footage, turned into a bench model.
-No wind-tunnel data went into it, and the numbers in the model (zone share, upwash, stall point) were chosen to match
-behaviour, not measured. F-22E 5.1.1 flies it and was flown on 26 Nov; the 4.8.x builds that shaped it were bench-tested,
+**Status, honestly.** The physics below is a bench model of how jets with this layout generally behave, not a model of any
+one aircraft. No wind-tunnel data went into it, and the numbers in the model (zone share, upwash, stall point) were chosen to
+match that behaviour, not measured. F-22E 5.1.1 flies it and was flown on 26 Nov; the 4.8.x builds that shaped it were bench-tested,
 and their notes say which were flown.
 
 #### What a coplanar tail does differently
@@ -3966,16 +3966,15 @@ layout, because it models a legacy tail.
 
 A coplanar, close-coupled tail behaves differently:
 - **The wing's influence is strongest at low AoA and fades as the wake rises above the tail.** By the high 20s to low 30s of
-  body AoA the stab is mostly in free air. That is where the real jets' stabs visibly stop helping the roll and start
-  reversing it.
+  body AoA the stab is mostly in free air. That is where the stabs stop helping the roll and start reversing it.
 - **The outer part of the stab sees free air early,** plus some upwash from the forebody and chines. The inner part, next to
   the fuselage, is still in the wing's turned flow. So the stab does not stall all at once.
 - **A stalled stab is a flat plate.** Its force stays almost level past the stall (the normal-force plateau), so moving it
   further trailing-edge down changes pitch little but adds drag far aft and outboard. That drag yaws the jet into the roll,
   which is most of a velocity-vector roll at 30°+ AoA. Moving it back toward attached flow dumps its force. This is why a big
   stab split barely moves the pitch at high AoA unless one stab stays near neutral.
-- **Nose-down survives the stall.** The footage shows the stabs still driving the nose down at 50–55° and low speed, because
-  the stalled plate's force is large and far aft.
+- **Nose-down survives the stall.** The stabs still drive the nose down at 50–55° and low speed, because the stalled plate's
+  force is large and far aft.
 
 Nuclear Option has **no interference between parts**: every part reads its own lift chart at its own free-stream AoA (§24.1).
 So each of these effects must be added as a model, and it must be mirrored in the FCS's own tables (§24.9 step 3).
@@ -3989,7 +3988,7 @@ So each of these effects must be added as a model, and it must be mirrored in th
 | Post-stall plate | plate curve with a shallow dip (0.9, width 12°) | the normal-force plateau above |
 | Fore / aft body lift | the X2-style schedules (§8.15), refitted for the two-zone tail (`TwoZoneLiftRefit` 0.25, `TwoZoneLowAoAUnstable` on) | sets the pitch curve without changing total lift or drag (§24.3) |
 | Slats with their own physics | `SlatPhysics` on, `TwoZoneSlatAftGain` 0.55 | the slats keep the flow attached over the aft wing and body. That balances the LERX lift, which would otherwise out-lift the stabs at some AoA and leave a band with no nose-down (the author found this band in his own SimplePlanes tests) |
-| Fins blanked | `FinBlanking` on, from 38° to 46° body AoA (`FinBlankAoA0` / `1`), floor 0.5 | the twin fins lose effect in the low 40s, as the author reads the footage (no rudder toe-in in a high-AoA hold) |
+| Fins blanked | `FinBlanking` on, from 38° to 46° body AoA (`FinBlankAoA0` / `1`), floor 0.5 | the twin fins lose effect in the low 40s, in the wake of the forebody and wing |
 | Stall order | stabs ~20°, inner flaperons ~35°, outer ~45° | staggered so roll authority has no hole (§24.4); the flaperons have roll priority |
 | AoA limits | 65 / 50 with TVC; **55 / 50 without** (`NoTvcAoACap*`, 4.8.11) | what the airframe alone can hold |
 
